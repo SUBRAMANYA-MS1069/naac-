@@ -1,0 +1,8 @@
+total 3768
+drwxr-xr-x 3 root root    4096 Oct 29 13:15 .
+drwxr-xr-x 1 root root     162 Oct 29 13:14 ..
+-rw-r--r-- 1 root root  535486 Oct 29 13:14 NAAC Compliance System - Development Team Task Assignments (1).pdf
+-rw-r--r-- 1 root root 1090598 Oct 29 13:14 NAAC System - Individual Developer Checklists.pdf
+-rw-r--r-- 1 root root 2179491 Oct 29 13:14 developer-sop.md.pdf
+-rw-r--r-- 1 root root   37624 Oct 29 13:14 module6-api-routes.md
+drwxr-xr-x 2 root root      58 Oct 29 13:15 outputs

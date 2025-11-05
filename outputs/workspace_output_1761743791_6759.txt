@@ -1,0 +1,43 @@
+ 9. Testing Requirements
+
+10. Git Workflow
+
+11. Code Review Checklist
+
+
+
+1. Project Structure
+1.1 Root Directory Structure
+
+  naac-system/
+  ├── src/
+  │ ├── config/             # Configuration files
+  │ ├── models/              # Database models (Universal + Module-specific)
+  │ │ ├── universal/          # Shared across all modules
+  │ │ └── modules/            # Module-specific models
+  │ │        ├── auth/
+  │ │        ├── academic/
+  │ │        ├── faculty/
+  │ │        ├── finance/
+--
+9. Testing Requirements
+9.1 Unit Tests
+Required Coverage: 80%+
+
+Location: tests/unit/[module]/[entity].test.js
+
+  javascript
+  const { StudentService } = require('../../../src/services/modules/academic');
+  const Student = require('../../../src/models/modules/academic/student.model');
+
+
+  describe('StudentService', () => {
+
+
+   describe('getStudentById', () => {
+     it('should return student when found', async () => {
+        const mockStudent = {
+         studentId: 'test-123',
+         name: 'John Doe'
+        };
+

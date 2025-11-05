@@ -1,0 +1,20 @@
+# Module 6: Financial & Administrative - API Routes Specification
+
+## Overview
+Developer: Developer 6  
+Base URL: `/api/v1/finance`  
+Authentication: JWT Bearer Token Required  
+Content-Type: `application/json`
+
+---
+
+## 1. Financial Accounts Management APIs
+
+### 1.1 Chart of Accounts
+
+#### Create Account
+```
+POST /api/v1/finance/accounts
+```
+**Request Body:**
+```json

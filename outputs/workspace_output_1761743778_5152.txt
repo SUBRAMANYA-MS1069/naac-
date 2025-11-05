@@ -1,0 +1,63 @@
+ 7. Database Schema Guidelines
+
+ 8. API Development Guidelines
+
+ 9. Testing Requirements
+
+10. Git Workflow
+
+11. Code Review Checklist
+
+
+
+1. Project Structure
+1.1 Root Directory Structure
+
+  naac-system/
+  ├── src/
+  │ ├── config/             # Configuration files
+  │ ├── models/              # Database models (Universal + Module-specific)
+  │ │ ├── universal/          # Shared across all modules
+  │ │ └── modules/            # Module-specific models
+  │ │        ├── auth/
+  │ │        ├── academic/
+  │ │        ├── faculty/
+  │ │        ├── finance/
+│ │      ├── infrastructure/
+│ │      ├── quality/
+│ │      ├── research/
+│ │      ├── llm/
+│ │      └── system/
+│ ├── controllers/         # Business logic
+--
+7. Database Schema Guidelines
+7.1 Required Fields in Every Collection
+
+ javascript
+
+ {
+     // Primary Key - ALWAYS custom string ID
+     [entity]Id: {
+      type: String,
+      default: () => uuidv4(),
+      unique: true,
+      required: true,
+      index: true
+     },
+
+
+     // Tenant isolation - ALWAYS required
+     tenantId: {
+      type: String,
+      required: true,
+      index: true,
+      ref: 'Tenant'
+     },
+
+
+     // Soft delete - ALWAYS include
+     isActive: {
+      type: Boolean,
+      default: true,
+      index: true
+     },

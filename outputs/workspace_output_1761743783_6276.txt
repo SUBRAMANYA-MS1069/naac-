@@ -1,0 +1,63 @@
+ 8. API Development Guidelines
+
+ 9. Testing Requirements
+
+10. Git Workflow
+
+11. Code Review Checklist
+
+
+
+1. Project Structure
+1.1 Root Directory Structure
+
+  naac-system/
+  ├── src/
+  │ ├── config/             # Configuration files
+  │ ├── models/              # Database models (Universal + Module-specific)
+  │ │ ├── universal/          # Shared across all modules
+  │ │ └── modules/            # Module-specific models
+  │ │        ├── auth/
+  │ │        ├── academic/
+  │ │        ├── faculty/
+  │ │        ├── finance/
+│ │      ├── infrastructure/
+│ │      ├── quality/
+│ │      ├── research/
+│ │      ├── llm/
+│ │      └── system/
+│ ├── controllers/         # Business logic
+│ │ ├── universal/
+│ │ └── modules/
+--
+8. API Development Guidelines
+8.1 Response Format
+Success Response:
+
+  javascript
+
+  {
+      "success": true,
+      "data": {
+          // Response data
+      },
+      "message": "Operation successful"
+  }
+
+
+Error Response:
+
+  javascript
+
+  {
+      "success": false,
+      "error": {
+          "code": "ERROR_CODE",
+          "message": "Human readable message",
+          "details": [], // Optional
+          "timestamp": "2024-10-29T10:30:00Z"
+      }
+  }
+
+
+Paginated Response:

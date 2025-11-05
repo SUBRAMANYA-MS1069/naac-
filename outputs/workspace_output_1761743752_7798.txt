@@ -1,0 +1,30 @@
+NAAC Compliance Management System - Developer SOP (Standard
+Operating Procedure)
+Document Information
+Version: 1.0
+Last Updated: October 2025
+Mandatory For: All 10 Development Teams
+Review Cycle: Every Sprint
+
+
+
+Table of Contents
+ 1. Project Structure
+
+ 2. Universal Collections
+
+ 3. Module-Specific Collections
+
+ 4. Collection Dependencies Map
+
+ 5. Naming Conventions
+
+ 6. Coding Standards
+
+ 7. Database Schema Guidelines
+
+ 8. API Development Guidelines
+
+ 9. Testing Requirements
+
+10. Git Workflow

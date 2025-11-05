@@ -1,0 +1,1950 @@
+# Module 6: Financial & Administrative - API Routes Specification
+
+## Overview
+Developer: Developer 6  
+Base URL: `/api/v1/finance`  
+Authentication: JWT Bearer Token Required  
+Content-Type: `application/json`
+
+---
+
+## 1. Financial Accounts Management APIs
+
+### 1.1 Chart of Accounts
+
+#### Create Account
+```
+POST /api/v1/finance/accounts
+```
+**Request Body:**
+```json
+{
+  "accountCode": "string",
+  "accountName": "string",
+  "accountType": "Asset|Liability|Equity|Revenue|Expense",
+  "accountCategory": "CurrentAsset|FixedAsset|CurrentLiability|LongTermLiability|Income|DirectExpense|IndirectExpense",
+  "parentAccountId": "string",
+  "description": "string",
+  "openingBalance": 0,
+  "openingBalanceDate": "ISO8601",
+  "currency": "INR",
+  "isActive": true,
+  "taxApplicable": false,
+  "gstRate": 0
+}
+```
+**Response:** `201 Created`
+```json
+{
+  "success": true,
+  "data": {
+    "accountId": "string",
+    "accountCode": "string",
+    "accountName": "string",
+    "currentBalance": 0,
+    "createdAt": "ISO8601"
+  }
+}
+```
+
+#### Get All Accounts
+```
+GET /api/v1/finance/accounts?type=Asset&active=true&page=1&limit=50
+```
+**Query Parameters:**
+- `type` (string, optional)
+- `category` (string, optional)
+- `active` (boolean, default: true)
+- `search` (string, optional)
+- `page` (number, default: 1)
+- `limit` (number, default: 50)
+
+**Response:** `200 OK`
+
+#### Get Account by ID
+```
+GET /api/v1/finance/accounts/:accountId
+```
+**Response:** `200 OK`
+
+#### Update Account
+```
+PUT /api/v1/finance/accounts/:accountId
+```
+**Response:** `200 OK`
+
+#### Get Account Balance
+```
+GET /api/v1/finance/accounts/:accountId/balance?asOfDate=2024-10-25
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "accountId": "string",
+    "accountCode": "string",
+    "accountName": "string",
+    "openingBalance": 1000000,
+    "debitTotal": 500000,
+    "creditTotal": 300000,
+    "currentBalance": 1200000,
+    "asOfDate": "ISO8601"
+  }
+}
+```
+
+---
+
+### 1.2 Journal Entries
+
+#### Create Journal Entry
+```
+POST /api/v1/finance/journal-entries
+```
+**Request Body:**
+```json
+{
+  "entryNumber": "JE-2024-00123",
+  "entryDate": "ISO8601",
+  "entryType": "Journal|Payment|Receipt|ContraEntry|Adjustment",
+  "referenceNumber": "string",
+  "description": "string",
+  "lineItems": [
+    {
+      "accountId": "string",
+      "debit": 50000,
+      "credit": 0,
+      "description": "string",
+      "costCenterId": "string",
+      "projectId": "string"
+    },
+    {
+      "accountId": "string",
+      "debit": 0,
+      "credit": 50000,
+      "description": "string"
+    }
+  ],
+  "attachments": ["url"],
+  "createdBy": "userId",
+  "approvalRequired": true
+}
+```
+**Response:** `201 Created`
+
+#### Get Journal Entries
+```
+GET /api/v1/finance/journal-entries?startDate=2024-10-01&endDate=2024-10-31&status=Posted
+```
+**Query Parameters:**
+- `startDate` (ISO8601, optional)
+- `endDate` (ISO8601, optional)
+- `status` (enum: Draft|Pending|Posted|Rejected)
+- `entryType` (string, optional)
+- `accountId` (string, optional)
+- `page` (number, default: 1)
+
+**Response:** `200 OK`
+
+#### Get Entry by ID
+```
+GET /api/v1/finance/journal-entries/:entryId
+```
+**Response:** `200 OK`
+
+#### Update Journal Entry
+```
+PUT /api/v1/finance/journal-entries/:entryId
+```
+**Response:** `200 OK`
+
+#### Post Journal Entry
+```
+POST /api/v1/finance/journal-entries/:entryId/post
+```
+**Request Body:**
+```json
+{
+  "postDate": "ISO8601",
+  "postedBy": "userId",
+  "remarks": "string"
+}
+```
+**Response:** `200 OK`
+
+#### Reverse Journal Entry
+```
+POST /api/v1/finance/journal-entries/:entryId/reverse
+```
+**Request Body:**
+```json
+{
+  "reversalDate": "ISO8601",
+  "reason": "string",
+  "reversedBy": "userId"
+}
+```
+**Response:** `200 OK`
+
+---
+
+## 2. Budget Management APIs
+
+### 2.1 Budget Planning
+
+#### Create Budget
+```
+POST /api/v1/finance/budgets
+```
+**Request Body:**
+```json
+{
+  "budgetName": "string",
+  "financialYear": "2024-25",
+  "budgetType": "Annual|Quarterly|Project|Department",
+  "startDate": "ISO8601",
+  "endDate": "ISO8601",
+  "departmentId": "string",
+  "status": "Draft|Submitted|Approved|Active",
+  "budgetLines": [
+    {
+      "accountId": "string",
+      "accountName": "string",
+      "budgetCategory": "Income|Expense",
+      "quarters": [
+        {
+          "quarter": 1,
+          "amount": 500000
+        },
+        {
+          "quarter": 2,
+          "amount": 600000
+        },
+        {
+          "quarter": 3,
+          "amount": 550000
+        },
+        {
+          "quarter": 4,
+          "amount": 650000
+        }
+      ],
+      "totalBudget": 2300000,
+      "notes": "string"
+    }
+  ],
+  "totalIncome": 10000000,
+  "totalExpense": 9000000,
+  "netBudget": 1000000,
+  "assumptions": ["string"],
+  "preparedBy": "userId",
+  "reviewers": ["userId"]
+}
+```
+**Response:** `201 Created`
+
+#### Get All Budgets
+```
+GET /api/v1/finance/budgets?financialYear=2024-25&status=Active&department=CS
+```
+**Response:** `200 OK`
+
+#### Get Budget by ID
+```
+GET /api/v1/finance/budgets/:budgetId
+```
+**Response:** `200 OK`
+
+#### Update Budget
+```
+PUT /api/v1/finance/budgets/:budgetId
+```
+**Response:** `200 OK`
+
+#### Submit Budget for Approval
+```
+POST /api/v1/finance/budgets/:budgetId/submit
+```
+**Request Body:**
+```json
+{
+  "submittedBy": "userId",
+  "submittedDate": "ISO8601",
+  "approvers": ["userId"],
+  "comments": "string"
+}
+```
+**Response:** `200 OK`
+
+#### Approve/Reject Budget
+```
+POST /api/v1/finance/budgets/:budgetId/approve
+```
+**Request Body:**
+```json
+{
+  "action": "Approve|Reject|RequestRevision",
+  "approvedBy": "userId",
+  "comments": "string",
+  "approvalDate": "ISO8601"
+}
+```
+**Response:** `200 OK`
+
+---
+
+### 2.2 Budget Monitoring
+
+#### Get Budget vs Actual
+```
+GET /api/v1/finance/budgets/:budgetId/vs-actual?asOfDate=2024-10-25
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "budgetId": "string",
+    "budgetName": "string",
+    "financialYear": "2024-25",
+    "asOfDate": "ISO8601",
+    "summary": {
+      "totalBudget": 9000000,
+      "actualSpent": 5400000,
+      "variance": 3600000,
+      "percentageUsed": 60,
+      "remainingBudget": 3600000
+    },
+    "lineItems": [
+      {
+        "accountName": "string",
+        "budgetAmount": 2300000,
+        "actualAmount": 1380000,
+        "variance": 920000,
+        "variancePercentage": 40,
+        "status": "OnTrack|UnderUtilized|OverSpent|NearLimit"
+      }
+    ],
+    "quarterlyComparison": [
+      {
+        "quarter": 1,
+        "budgeted": 500000,
+        "actual": 480000,
+        "variance": 20000
+      }
+    ],
+    "alerts": [
+      {
+        "type": "OverBudget|NearingLimit",
+        "accountName": "string",
+        "message": "string",
+        "severity": "High|Medium|Low"
+      }
+    ]
+  }
+}
+```
+
+#### Get Budget Utilization Report
+```
+GET /api/v1/finance/budgets/utilization-report?financialYear=2024-25&department=CS
+```
+**Response:** `200 OK`
+
+#### Set Budget Alert
+```
+POST /api/v1/finance/budgets/:budgetId/alerts
+```
+**Request Body:**
+```json
+{
+  "alertType": "ThresholdReached|QuarterlyReview|MonthEnd",
+  "threshold": 80,
+  "accountIds": ["string"],
+  "recipients": ["userId"],
+  "frequency": "Daily|Weekly|Monthly"
+}
+```
+**Response:** `201 Created`
+
+---
+
+### 2.3 Budget Revision
+
+#### Create Budget Revision
+```
+POST /api/v1/finance/budgets/:budgetId/revisions
+```
+**Request Body:**
+```json
+{
+  "revisionNumber": 1,
+  "revisionDate": "ISO8601",
+  "reason": "string",
+  "changes": [
+    {
+      "accountId": "string",
+      "oldAmount": 2300000,
+      "newAmount": 2500000,
+      "justification": "string"
+    }
+  ],
+  "requestedBy": "userId",
+  "approvalRequired": true
+}
+```
+**Response:** `201 Created`
+
+#### Get Budget Revisions
+```
+GET /api/v1/finance/budgets/:budgetId/revisions
+```
+**Response:** `200 OK`
+
+---
+
+## 3. Fee Management APIs
+
+### 3.1 Fee Structure
+
+#### Create Fee Structure
+```
+POST /api/v1/finance/fees/structures
+```
+**Request Body:**
+```json
+{
+  "structureName": "string",
+  "academicYear": "2024-25",
+  "programId": "string",
+  "semester": "string",
+  "feeType": "Tuition|Admission|Examination|Library|Laboratory|Hostel|Transport|Other",
+  "studentCategory": "General|SC/ST|OBC|EWS|International",
+  "components": [
+    {
+      "componentName": "Tuition Fee",
+      "amount": 50000,
+      "isMandatory": true,
+      "isRefundable": false,
+      "taxApplicable": false,
+      "accountId": "string"
+    },
+    {
+      "componentName": "Library Fee",
+      "amount": 5000,
+      "isMandatory": true,
+      "isRefundable": true,
+      "taxApplicable": false,
+      "accountId": "string"
+    }
+  ],
+  "totalFee": 55000,
+  "paymentSchedule": [
+    {
+      "installmentNumber": 1,
+      "dueDate": "ISO8601",
+      "amount": 30000
+    },
+    {
+      "installmentNumber": 2,
+      "dueDate": "ISO8601",
+      "amount": 25000
+    }
+  ],
+  "lateFeePolicy": {
+    "gracePeriodDays": 7,
+    "lateFeePerDay": 100,
+    "maxLateFee": 5000
+  },
+  "discounts": [
+    {
+      "discountName": "Merit Scholarship",
+      "discountType": "Percentage|Fixed",
+      "discountValue": 10,
+      "eligibilityCriteria": "string"
+    }
+  ],
+  "effectiveFrom": "ISO8601",
+  "effectiveTo": "ISO8601",
+  "isActive": true
+}
+```
+**Response:** `201 Created`
+
+#### Get Fee Structures
+```
+GET /api/v1/finance/fees/structures?academicYear=2024-25&program=CS&active=true
+```
+**Response:** `200 OK`
+
+#### Get Structure by ID
+```
+GET /api/v1/finance/fees/structures/:structureId
+```
+**Response:** `200 OK`
+
+#### Update Fee Structure
+```
+PUT /api/v1/finance/fees/structures/:structureId
+```
+**Response:** `200 OK`
+
+---
+
+### 3.2 Fee Collection
+
+#### Generate Fee Invoice
+```
+POST /api/v1/finance/fees/invoices/generate
+```
+**Request Body:**
+```json
+{
+  "studentId": "string",
+  "feeStructureId": "string",
+  "academicYear": "2024-25",
+  "semester": "string",
+  "dueDate": "ISO8601",
+  "discountsApplied": [
+    {
+      "discountId": "string",
+      "discountAmount": 5000,
+      "reason": "string"
+    }
+  ],
+  "adjustments": [
+    {
+      "description": "string",
+      "amount": -1000,
+      "reason": "string"
+    }
+  ],
+  "remarks": "string"
+}
+```
+**Response:** `201 Created`
+```json
+{
+  "success": true,
+  "data": {
+    "invoiceId": "string",
+    "invoiceNumber": "INV-2024-00123",
+    "studentId": "string",
+    "totalAmount": 50000,
+    "dueDate": "ISO8601",
+    "downloadUrl": "string"
+  }
+}
+```
+
+#### Get Student Invoices
+```
+GET /api/v1/finance/fees/invoices/student/:studentId?academicYear=2024-25&status=Pending
+```
+**Response:** `200 OK`
+
+#### Get Invoice by ID
+```
+GET /api/v1/finance/fees/invoices/:invoiceId
+```
+**Response:** `200 OK`
+
+#### Record Fee Payment
+```
+POST /api/v1/finance/fees/payments
+```
+**Request Body:**
+```json
+{
+  "invoiceId": "string",
+  "studentId": "string",
+  "paymentDate": "ISO8601",
+  "paymentMode": "Cash|Cheque|DD|NetBanking|UPI|Card|OnlinePaymentGateway",
+  "amount": 50000,
+  "transactionId": "string",
+  "bankName": "string",
+  "chequeNumber": "string",
+  "chequeDate": "ISO8601",
+  "remarks": "string",
+  "receivedBy": "userId",
+  "allocations": [
+    {
+      "feeComponent": "Tuition Fee",
+      "amount": 45000
+    },
+    {
+      "feeComponent": "Library Fee",
+      "amount": 5000
+    }
+  ]
+}
+```
+**Response:** `201 Created`
+
+#### Get Payment History
+```
+GET /api/v1/finance/fees/payments/student/:studentId
+```
+**Response:** `200 OK`
+
+#### Generate Fee Receipt
+```
+GET /api/v1/finance/fees/payments/:paymentId/receipt?format=pdf
+```
+**Response:** `200 OK` (File download)
+
+#### Initiate Refund
+```
+POST /api/v1/finance/fees/refunds
+```
+**Request Body:**
+```json
+{
+  "studentId": "string",
+  "paymentId": "string",
+  "refundAmount": 5000,
+  "refundReason": "string",
+  "refundMode": "Cash|Cheque|BankTransfer",
+  "bankDetails": {
+    "accountNumber": "string",
+    "ifscCode": "string",
+    "accountHolderName": "string"
+  },
+  "approvedBy": "userId",
+  "remarks": "string"
+}
+```
+**Response:** `201 Created`
+
+---
+
+### 3.3 Scholarship Management
+
+#### Create Scholarship Scheme
+```
+POST /api/v1/finance/fees/scholarships
+```
+**Request Body:**
+```json
+{
+  "scholarshipName": "string",
+  "scholarshipType": "Merit|NeedBased|Sports|Cultural|Government|Private",
+  "sponsorName": "string",
+  "academicYear": "2024-25",
+  "eligibilityCriteria": {
+    "minimumCGPA": 8.0,
+    "familyIncome": {
+      "max": 200000
+    },
+    "category": ["General", "OBC"],
+    "otherCriteria": ["string"]
+  },
+  "benefitType": "FullTuitionWaiver|PartialTuitionWaiver|Stipend|FeeReduction",
+  "benefitAmount": 50000,
+  "benefitPercentage": 100,
+  "totalSlots": 50,
+  "applicationStartDate": "ISO8601",
+  "applicationEndDate": "ISO8601",
+  "selectionProcess": "string",
+  "documents": ["url"],
+  "isActive": true
+}
+```
+**Response:** `201 Created`
+
+#### Apply for Scholarship
+```
+POST /api/v1/finance/fees/scholarships/applications
+```
+**Request Body:**
+```json
+{
+  "scholarshipId": "string",
+  "studentId": "string",
+  "applicationDate": "ISO8601",
+  "cgpa": 8.5,
+  "familyIncome": 150000,
+  "category": "General",
+  "supportingDocuments": [
+    {
+      "documentType": "IncomeCertificate|Marksheet|BankStatement",
+      "documentUrl": "string"
+    }
+  ],
+  "reasonForApplication": "string"
+}
+```
+**Response:** `201 Created`
+
+#### Get Scholarship Applications
+```
+GET /api/v1/finance/fees/scholarships/:scholarshipId/applications?status=Pending
+```
+**Response:** `200 OK`
+
+#### Approve Scholarship Application
+```
+POST /api/v1/finance/fees/scholarships/applications/:applicationId/approve
+```
+**Request Body:**
+```json
+{
+  "action": "Approve|Reject",
+  "approvedAmount": 50000,
+  "approvedBy": "userId",
+  "comments": "string",
+  "effectiveDate": "ISO8601"
+}
+```
+**Response:** `200 OK`
+
+#### Disburse Scholarship
+```
+POST /api/v1/finance/fees/scholarships/disbursements
+```
+**Request Body:**
+```json
+{
+  "applicationId": "string",
+  "studentId": "string",
+  "amount": 50000,
+  "disbursementDate": "ISO8601",
+  "disbursementMode": "DirectFeeWaiver|BankTransfer|Cheque",
+  "referenceNumber": "string",
+  "remarks": "string"
+}
+```
+**Response:** `201 Created`
+
+---
+
+### 3.4 Fee Analytics
+
+#### Get Fee Collection Report
+```
+GET /api/v1/finance/fees/analytics/collection-report?startDate=2024-04-01&endDate=2024-10-25&program=CS
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "period": {
+      "startDate": "ISO8601",
+      "endDate": "ISO8601"
+    },
+    "summary": {
+      "totalFeeDemand": 50000000,
+      "totalCollected": 45000000,
+      "collectionPercentage": 90,
+      "pendingAmount": 5000000,
+      "refundedAmount": 500000
+    },
+    "programWiseCollection": [
+      {
+        "programName": "B.Tech Computer Science",
+        "totalStudents": 240,
+        "feeDemand": 12000000,
+        "collected": 11000000,
+        "collectionRate": 91.7
+      }
+    ],
+    "modeWiseCollection": {
+      "Cash": 1000000,
+      "Online": 40000000,
+      "Cheque": 4000000
+    },
+    "defaulters": [
+      {
+        "studentId": "string",
+        "studentName": "string",
+        "pendingAmount": 50000,
+        "daysOverdue": 45
+      }
+    ],
+    "scholarshipDisbursed": 2500000,
+    "dailyCollectionTrend": ["array"]
+  }
+}
+```
+
+#### Get Outstanding Fees Report
+```
+GET /api/v1/finance/fees/analytics/outstanding?program=CS&semester=5
+```
+**Response:** `200 OK`
+
+#### Get Defaulter List
+```
+GET /api/v1/finance/fees/analytics/defaulters?daysOverdue=30&minAmount=10000
+```
+**Response:** `200 OK`
+
+---
+
+## 4. Expenditure Management APIs
+
+### 4.1 Purchase Orders
+
+#### Create Purchase Order
+```
+POST /api/v1/finance/expenditure/purchase-orders
+```
+**Request Body:**
+```json
+{
+  "poNumber": "PO-2024-00123",
+  "poDate": "ISO8601",
+  "vendorId": "string",
+  "departmentId": "string",
+  "requisitionId": "string",
+  "poType": "Goods|Services|Both",
+  "deliveryDate": "ISO8601",
+  "deliveryLocation": "string",
+  "items": [
+    {
+      "itemDescription": "string",
+      "quantity": 10,
+      "unit": "Piece",
+      "unitPrice": 5000,
+      "taxRate": 18,
+      "taxAmount": 9000,
+      "totalAmount": 59000,
+      "specifications": "string",
+      "accountId": "string"
+    }
+  ],
+  "subtotal": 50000,
+  "taxTotal": 9000,
+  "shippingCharges": 1000,
+  "totalAmount": 60000,
+  "paymentTerms": "string",
+  "deliveryTerms": "string",
+  "warrantyDetails": "string",
+  "specialInstructions": "string",
+  "preparedBy": "userId",
+  "approvers": ["userId"],
+  "budgetCode": "string"
+}
+```
+**Response:** `201 Created`
+
+#### Get Purchase Orders
+```
+GET /api/v1/finance/expenditure/purchase-orders?status=Approved&vendor=VEN001&startDate=2024-10-01
+```
+**Response:** `200 OK`
+
+#### Get PO by ID
+```
+GET /api/v1/finance/expenditure/purchase-orders/:poId
+```
+**Response:** `200 OK`
+
+#### Update Purchase Order
+```
+PUT /api/v1/finance/expenditure/purchase-orders/:poId
+```
+**Response:** `200 OK`
+
+#### Approve Purchase Order
+```
+POST /api/v1/finance/expenditure/purchase-orders/:poId/approve
+```
+**Request Body:**
+```json
+{
+  "action": "Approve|Reject|RequestRevision",
+  "approvedBy": "userId",
+  "approvalLevel": 1,
+  "comments": "string",
+  "approvalDate": "ISO8601"
+}
+```
+**Response:** `200 OK`
+
+#### Close Purchase Order
+```
+POST /api/v1/finance/expenditure/purchase-orders/:poId/close
+```
+**Request Body:**
+```json
+{
+  "closureDate": "ISO8601",
+  "closureReason": "Completed|Cancelled|PartiallyReceived",
+  "remarks": "string",
+  "closedBy": "userId"
+}
+```
+**Response:** `200 OK`
+
+---
+
+### 4.2 Vendor Management
+
+#### Register Vendor
+```
+POST /api/v1/finance/expenditure/vendors
+```
+**Request Body:**
+```json
+{
+  "vendorCode": "string",
+  "vendorName": "string",
+  "vendorType": "Supplier|ServiceProvider|Contractor|Consultant",
+  "category": ["Electronics", "Furniture"],
+  "contactPerson": {
+    "name": "string",
+    "designation": "string",
+    "mobile": "string",
+    "email": "string"
+  },
+  "address": {
+    "street": "string",
+    "city": "string",
+    "state": "string",
+    "pincode": "string",
+    "country": "string"
+  },
+  "taxDetails": {
+    "panNumber": "string",
+    "gstNumber": "string",
+    "tanNumber": "string"
+  },
+  "bankDetails": {
+    "accountNumber": "string",
+    "bankName": "string",
+    "ifscCode": "string",
+    "branch": "string"
+  },
+  "paymentTerms": "string",
+  "creditLimit": 500000,
+  "creditPeriod": 30,
+  "documents": [
+    {
+      "documentType": "GST|PAN|Cancelled Cheque|Contract",
+      "documentUrl": "string"
+    }
+  ],
+  "rating": 4.5,
+  "isActive": true
+}
+```
+**Response:** `201 Created`
+
+#### Get All Vendors
+```
+GET /api/v1/finance/expenditure/vendors?type=Supplier&category=Electronics&active=true
+```
+**Response:** `200 OK`
+
+#### Get Vendor by ID
+```
+GET /api/v1/finance/expenditure/vendors/:vendorId
+```
+**Response:** `200 OK`
+
+#### Update Vendor
+```
+PUT /api/v1/finance/expenditure/vendors/:vendorId
+```
+**Response:** `200 OK`
+
+#### Get Vendor Performance
+```
+GET /api/v1/finance/expenditure/vendors/:vendorId/performance
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "vendorId": "string",
+    "vendorName": "string",
+    "totalOrders": 45,
+    "totalValue": 2500000,
+    "onTimeDelivery": 88,
+    "qualityRating": 4.2,
+    "paymentHistory": {
+      "totalPayments": 45,
+      "onTimePayments": 43,
+      "overduePayments": 2
+    },
+    "recentOrders": ["array"]
+  }
+}
+```
+
+---
+
+### 4.3 Bills & Invoices
+
+#### Record Bill/Invoice
+```
+POST /api/v1/finance/expenditure/bills
+```
+**Request Body:**
+```json
+{
+  "billNumber": "string",
+  "billDate": "ISO8601",
+  "vendorId": "string",
+  "purchaseOrderId": "string",
+  "billType": "Goods|Services|Utility|Salary|Other",
+  "departmentId": "string",
+  "lineItems": [
+    {
+      "description": "string",
+      "quantity": 10,
+      "unitPrice": 5000,
+      "taxRate": 18,
+      "taxAmount": 9000,
+      "totalAmount": 59000,
+      "accountId": "string"
+    }
+  ],
+  "subtotal": 50000,
+  "taxTotal": 9000,
+  "otherCharges": 1000,
+  "totalAmount": 60000,
+  "paymentTerms": "Net 30",
+  "dueDate": "ISO8601",
+  "attachments": ["url"],
+  "remarks": "string"
+}
+```
+**Response:** `201 Created`
+
+#### Get Bills
+```
+GET /api/v1/finance/expenditure/bills?status=Pending&vendor=VEN001&startDate=2024-10-01
+```
+**Response:** `200 OK`
+
+#### Get Bill by ID
+```
+GET /api/v1/finance/expenditure/bills/:billId
+```
+**Response:** `200 OK`
+
+#### Approve Bill for Payment
+```
+POST /api/v1/finance/expenditure/bills/:billId/approve
+```
+**Request Body:**
+```json
+{
+  "approvedBy": "userId",
+  "approvalDate": "ISO8601",
+  "comments": "string"
+}
+```
+**Response:** `200 OK`
+
+---
+
+### 4.4 Payments
+
+#### Process Payment
+```
+POST /api/v1/finance/expenditure/payments
+```
+**Request Body:**
+```json
+{
+  "paymentDate": "ISO8601",
+  "paymentMode": "Cash|Cheque|NEFT|RTGS|IMPS|UPI",
+  "paymentType": "Vendor|Salary|Utility|Tax|Other",
+  "payeeId": "string",
+  "payeeName": "string",
+  "bills": [
+    {
+      "billId": "string",
+      "billAmount": 60000,
+      "paidAmount": 60000
+    }
+  ],
+  "totalAmount": 60000,
+  "bankAccountId": "string",
+  "chequeNumber": "string",
+  "chequeDate": "ISO8601",
+  "transactionId": "string",
+  "tdsApplicable": true,
+  "tdsAmount": 600,
+  "netPayment": 59400,
+  "remarks": "string",
+  "processedBy": "userId",
+  "approvedBy": "userId"
+}
+```
+**Response:** `201 Created`
+
+#### Get Payments
+```
+GET /api/v1/finance/expenditure/payments?startDate=2024-10-01&endDate=2024-10-31&paymentMode=NEFT
+```
+**Response:** `200 OK`
+
+#### Get Payment by ID
+```
+GET /api/v1/finance/expenditure/payments/:paymentId
+```
+**Response:** `200 OK`
+
+#### Generate Payment Voucher
+```
+GET /api/v1/finance/expenditure/payments/:paymentId/voucher?format=pdf
+```
+**Response:** `200 OK` (File download)
+
+#### Get Pending Payments
+```
+GET /api/v1/finance/expenditure/payments/pending?dueWithin=7
+```
+**Response:** `200 OK`
+
+---
+
+## 5. Payroll Management APIs
+
+### 5.1 Salary Structure
+
+#### Create Salary Structure
+```
+POST /api/v1/finance/payroll/structures
+```
+**Request Body:**
+```json
+{
+  "structureName": "string",
+  "designation": "Professor|Associate Professor|Assistant Professor|Staff",
+  "grade": "string",
+  "effectiveFrom": "ISO8601",
+  "components": {
+    "earnings": [
+      {
+        "componentName": "Basic Pay",
+        "componentType": "Fixed",
+        "amount": 50000,
+        "calculationType": "Fixed|PercentageOfBasic|Formula",
+        "isStatutory": false,
+        "isTaxable": true
+      },
+      {
+        "componentName": "HRA",
+        "componentType": "Allowance",
+        "percentage": 40,
+        "calculationType": "PercentageOfBasic",
+        "isStatutory": false,
+        "isTaxable": true
+      },
+      {
+        "componentName": "DA",
+        "componentType": "Allowance",
+        "percentage": 20,
+        "calculationType": "PercentageOfBasic",
+        "isStatutory": false,
+        "isTaxable": true
+      }
+    ],
+    "deductions": [
+      {
+        "componentName": "PF",
+        "percentage": 12,
+        "calculationType": "PercentageOfBasic",
+        "isStatutory": true,
+        "employerContribution": 12
+      },
+      {
+        "componentName": "ESI",
+        "percentage": 0.75,
+        "calculationType": "PercentageOfGross",
+        "isStatutory": true,
+        "employerContribution": 3.25
+      },
+      {
+        "componentName": "Professional Tax",
+        "amount": 200,
+        "calculationType": "Fixed",
+        "isStatutory": true
+      }
+    ]
+  },
+  "ctc": 83000,
+  "isActive": true
+}
+```
+**Response:** `201 Created`
+
+#### Get Salary Structures
+```
+GET /api/v1/finance/payroll/structures?designation=Professor&active=true
+```
+**Response:** `200 OK`
+
+#### Get Structure by ID
+```
+GET /api/v1/finance/payroll/structures/:structureId
+```
+**Response:** `200 OK`
+
+---
+
+### 5.2 Salary Processing
+
+#### Assign Salary Structure to Employee
+```
+POST /api/v1/finance/payroll/employee-salary
+```
+**Request Body:**
+```json
+{
+  "employeeId": "string",
+  "salaryStructureId": "string",
+  "effectiveFrom": "ISO8601",
+  "customComponents": [
+    {
+      "componentName": "Special Allowance",
+      "amount": 5000
+    }
+  ]
+}
+```
+**Response:** `201 Created`
+
+#### Process Monthly Salary
+```
+POST /api/v1/finance/payroll/process
+```
+**Request Body:**
+```json
+{
+  "month": 10,
+  "year": 2024,
+  "departmentId": "string",
+  "employeeIds": ["string"],
+  "attendanceAdjustment": true,
+  "leavesAdjustment": true,
+  "remarks": "string"
+}
+```
+**Response:** `202 Accepted`
+```json
+{
+  "success": true,
+  "data": {
+    "batchId": "string",
+    "month": 10,
+    "year": 2024,
+    "totalEmployees": 150,
+    "totalGross": 12450000,
+    "totalDeductions": 1245000,
+    "totalNet": 11205000,
+    "status": "Processing",
+    "processedBy": "userId"
+  }
+}
+```
+
+#### Get Salary Processing Status
+```
+GET /api/v1/finance/payroll/process/:batchId/status
+```
+**Response:** `200 OK`
+
+#### Get Employee Salary Slip
+```
+GET /api/v1/finance/payroll/salary-slip/:employeeId?month=10&year=2024
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "employeeId": "string",
+    "employeeName": "string",
+    "designation": "string",
+    "month": 10,
+    "year": 2024,
+    "payDays": 30,
+    "lop": 0,
+    "earnings": [
+      {
+        "componentName": "Basic Pay",
+        "amount": 50000
+      },
+      {
+        "componentName": "HRA",
+        "amount": 20000
+      },
+      {
+        "componentName": "DA",
+        "amount": 10000
+      }
+    ],
+    "grossEarnings": 83000,
+    "deductions": [
+      {
+        "componentName": "PF",
+        "amount": 6000
+      },
+      {
+        "componentName": "ESI",
+        "amount": 622
+      },
+      {
+        "componentName": "Professional Tax",
+        "amount": 200
+      },
+      {
+        "componentName": "TDS",
+        "amount": 1500
+      }
+    ],
+    "totalDeductions": 8322,
+    "netPay": 74678,
+    "paymentMode": "Bank Transfer",
+    "accountNumber": "****1234"
+  }
+}
+```
+
+#### Download Salary Slip
+```
+GET /api/v1/finance/payroll/salary-slip/:employeeId/download?month=10&year=2024&format=pdf
+```
+**Response:** `200 OK` (File download)
+
+#### Disburse Salary
+```
+POST /api/v1/finance/payroll/disburse
+```
+**Request Body:**
+```json
+{
+  "batchId": "string",
+  "disbursementDate": "ISO8601",
+  "bankAccountId": "string",
+  "disbursementMode": "BankTransfer|Cheque|Cash",
+  "remarks": "string",
+  "processedBy": "userId"
+}
+```
+**Response:** `200 OK`
+
+---
+
+### 5.3 Payroll Compliance
+
+#### Generate Form 16
+```
+GET /api/v1/finance/payroll/form16/:employeeId?financialYear=2024-25
+```
+**Response:** `200 OK` (File download)
+
+#### Generate PF Statement
+```
+GET /api/v1/finance/payroll/pf-statement/:employeeId?startDate=2024-04-01&endDate=2024-10-31
+```
+**Response:** `200 OK`
+
+#### Generate ESI Statement
+```
+GET /api/v1/finance/payroll/esi-statement?month=10&year=2024
+```
+**Response:** `200 OK`
+
+#### TDS Calculation
+```
+GET /api/v1/finance/payroll/tds/:employeeId/calculate?financialYear=2024-25
+```
+**Response:** `200 OK`
+
+---
+
+## 6. Financial Statements & Reports APIs
+
+### 6.1 Financial Statements
+
+#### Generate Income Statement
+```
+POST /api/v1/finance/reports/income-statement
+```
+**Request Body:**
+```json
+{
+  "startDate": "ISO8601",
+  "endDate": "ISO8601",
+  "format": "pdf|xlsx|json",
+  "includeComparative": true,
+  "comparativePeriod": {
+    "startDate": "ISO8601",
+    "endDate": "ISO8601"
+  },
+  "departmentWise": false
+}
+```
+**Response:** `200 OK` (File download or JSON)
+
+#### Generate Balance Sheet
+```
+POST /api/v1/finance/reports/balance-sheet
+```
+**Request Body:**
+```json
+{
+  "asOfDate": "ISO8601",
+  "format": "pdf|xlsx|json",
+  "includeComparative": true,
+  "comparativeDate": "ISO8601"
+}
+```
+**Response:** `200 OK`
+
+#### Generate Cash Flow Statement
+```
+POST /api/v1/finance/reports/cash-flow
+```
+**Request Body:**
+```json
+{
+  "startDate": "ISO8601",
+  "endDate": "ISO8601",
+  "method": "Direct|Indirect",
+  "format": "pdf|xlsx|json"
+}
+```
+**Response:** `200 OK`
+
+#### Generate Trial Balance
+```
+GET /api/v1/finance/reports/trial-balance?asOfDate=2024-10-25&format=pdf
+```
+**Response:** `200 OK`
+
+---
+
+### 6.2 Management Reports
+
+#### Generate Ledger Report
+```
+GET /api/v1/finance/reports/ledger/:accountId?startDate=2024-10-01&endDate=2024-10-31&format=pdf
+```
+**Response:** `200 OK`
+
+#### Generate Day Book
+```
+GET /api/v1/finance/reports/day-book?date=2024-10-25&format=pdf
+```
+**Response:** `200 OK`
+
+#### Generate Cash Book
+```
+GET /api/v1/finance/reports/cash-book?startDate=2024-10-01&endDate=2024-10-31&format=pdf
+```
+**Response:** `200 OK`
+
+#### Generate Bank Reconciliation
+```
+POST /api/v1/finance/reports/bank-reconciliation
+```
+**Request Body:**
+```json
+{
+  "bankAccountId": "string",
+  "statementDate": "ISO8601",
+  "bankStatement": [
+    {
+      "date": "ISO8601",
+      "description": "string",
+      "withdrawals": 0,
+      "deposits": 50000,
+      "balance": 1050000
+    }
+  ]
+}
+```
+**Response:** `200 OK`
+
+#### Generate Age Analysis Report
+```
+GET /api/v1/finance/reports/age-analysis?type=Receivables|Payables&asOfDate=2024-10-25
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "reportType": "Receivables",
+    "asOfDate": "ISO8601",
+    "summary": {
+      "totalOutstanding": 5000000,
+      "current": 2000000,
+      "days30": 1500000,
+      "days60": 1000000,
+      "days90": 300000,
+      "above90": 200000
+    },
+    "details": [
+      {
+        "partyName": "string",
+        "totalAmount": 50000,
+        "current": 20000,
+        "days30": 15000,
+        "days60": 10000,
+        "days90": 3000,
+        "above90": 2000
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 6.3 Audit Reports
+
+#### Generate Audit Trail
+```
+GET /api/v1/finance/reports/audit-trail?startDate=2024-10-01&endDate=2024-10-31&userId=string&actionType=Create
+```
+**Response:** `200 OK`
+
+#### Generate Audit Report
+```
+POST /api/v1/finance/reports/audit-report
+```
+**Request Body:**
+```json
+{
+  "auditPeriod": {
+    "startDate": "ISO8601",
+    "endDate": "ISO8601"
+  },
+  "auditType": "Internal|Statutory|Tax",
+  "sections": [
+    "FinancialStatements",
+    "Transactions",
+    "Compliance",
+    "InternalControls"
+  ],
+  "format": "pdf"
+}
+```
+**Response:** `200 OK` (File download)
+
+---
+
+## 7. Tax Management APIs
+
+### 7.1 GST Management
+
+#### Record GST Transaction
+```
+POST /api/v1/finance/tax/gst/transactions
+```
+**Request Body:**
+```json
+{
+  "transactionType": "Sale|Purchase",
+  "invoiceNumber": "string",
+  "invoiceDate": "ISO8601",
+  "partyGSTIN": "string",
+  "partyName": "string",
+  "placeOfSupply": "string",
+  "taxableAmount": 50000,
+  "cgst": 4500,
+  "sgst": 4500,
+  "igst": 0,
+  "totalGST": 9000,
+  "totalAmount": 59000,
+  "reverseCharge": false,
+  "invoiceType": "Regular|Export|Import|SEZ"
+}
+```
+**Response:** `201 Created`
+
+#### Get GST Transactions
+```
+GET /api/v1/finance/tax/gst/transactions?startDate=2024-10-01&endDate=2024-10-31&type=Sale
+```
+**Response:** `200 OK`
+
+#### Generate GSTR-1
+```
+POST /api/v1/finance/tax/gst/gstr1
+```
+**Request Body:**
+```json
+{
+  "month": 10,
+  "year": 2024,
+  "gstin": "string"
+}
+```
+**Response:** `200 OK` (JSON/Excel format)
+
+#### Generate GSTR-3B
+```
+POST /api/v1/finance/tax/gst/gstr3b
+```
+**Request Body:**
+```json
+{
+  "month": 10,
+  "year": 2024,
+  "gstin": "string"
+}
+```
+**Response:** `200 OK`
+
+---
+
+### 7.2 TDS Management
+
+#### Record TDS Deduction
+```
+POST /api/v1/finance/tax/tds/deductions
+```
+**Request Body:**
+```json
+{
+  "deducteeId": "string",
+  "deducteeName": "string",
+  "deducteePAN": "string",
+  "section": "194J|194C|192",
+  "paymentDate": "ISO8601",
+  "grossAmount": 50000,
+  "tdsRate": 10,
+  "tdsAmount": 5000,
+  "netAmount": 45000,
+  "quarter": "Q2",
+  "financialYear": "2024-25"
+}
+```
+**Response:** `201 Created`
+
+#### Generate TDS Certificate (Form 16A)
+```
+GET /api/v1/finance/tax/tds/form16a/:deductionId
+```
+**Response:** `200 OK` (File download)
+
+#### Generate TDS Return (Form 24Q/26Q)
+```
+POST /api/v1/finance/tax/tds/return
+```
+**Request Body:**
+```json
+{
+  "formType": "24Q|26Q|27Q",
+  "quarter": "Q2",
+  "financialYear": "2024-25"
+}
+```
+**Response:** `200 OK` (File download)
+
+---
+
+## 8. Financial Analytics APIs
+
+### 8.1 Financial Ratios
+
+#### Calculate Financial Ratios
+```
+GET /api/v1/finance/analytics/ratios?asOfDate=2024-10-25
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "liquidityRatios": {
+      "currentRatio": 2.5,
+      "quickRatio": 1.8,
+      "cashRatio": 0.9
+    },
+    "profitabilityRatios": {
+      "grossProfitMargin": 35,
+      "netProfitMargin": 15,
+      "returnOnAssets": 12,
+      "returnOnEquity": 18
+    },
+    "efficiencyRatios": {
+      "assetTurnover": 1.5,
+      "inventoryTurnover": 8,
+      "receivablesTurnover": 12
+    },
+    "leverageRatios": {
+      "debtToEquity": 0.5,
+      "debtRatio": 0.33,
+      "equityRatio": 0.67
+    }
+  }
+}
+```
+
+#### Get Revenue Analytics
+```
+GET /api/v1/finance/analytics/revenue?startDate=2024-04-01&endDate=2024-10-25
+```
+**Response:** `200 OK`
+
+#### Get Expense Analytics
+```
+GET /api/v1/finance/analytics/expenses?startDate=2024-04-01&endDate=2024-10-25&category=Department
+```
+**Response:** `200 OK`
+
+#### Get Cash Flow Analytics
+```
+GET /api/v1/finance/analytics/cash-flow?period=monthly&months=12
+```
+**Response:** `200 OK`
+
+---
+
+### 8.2 Financial Dashboard
+
+#### Get Financial Dashboard
+```
+GET /api/v1/finance/analytics/dashboard?period=current-month
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "summary": {
+      "totalRevenue": 10000000,
+      "totalExpenses": 8500000,
+      "netIncome": 1500000,
+      "cashBalance": 5000000,
+      "receivables": 3000000,
+      "payables": 2000000
+    },
+    "trends": {
+      "revenueGrowth": 12.5,
+      "expenseGrowth": 8.3,
+      "profitGrowth": 25.6
+    },
+    "alerts": [
+      {
+        "type": "BudgetExceeded|LowCash|OverduePayment",
+        "message": "string",
+        "severity": "High|Medium|Low"
+      }
+    ],
+    "charts": {
+      "revenueVsExpense": ["array"],
+      "departmentWiseExpense": ["array"],
+      "cashFlowTrend": ["array"]
+    }
+  }
+}
+```
+
+---
+
+## 9. External Integration APIs
+
+### 9.1 Accounting Software Integration
+
+#### Sync with Tally
+```
+POST /api/v1/finance/integrations/tally/sync
+```
+**Request Body:**
+```json
+{
+  "syncType": "Export|Import|Bidirectional",
+  "entities": ["Ledgers", "Vouchers", "Inventory"],
+  "startDate": "ISO8601",
+  "endDate": "ISO8601",
+  "tallyCompany": "string"
+}
+```
+**Response:** `202 Accepted`
+
+#### Sync with QuickBooks
+```
+POST /api/v1/finance/integrations/quickbooks/sync
+```
+**Response:** `202 Accepted`
+
+---
+
+### 9.2 Banking Integration
+
+#### Fetch Bank Statement
+```
+POST /api/v1/finance/integrations/banking/fetch-statement
+```
+**Request Body:**
+```json
+{
+  "bankAccountId": "string",
+  "startDate": "ISO8601",
+  "endDate": "ISO8601"
+}
+```
+**Response:** `200 OK`
+
+#### Initiate Bulk Payment
+```
+POST /api/v1/finance/integrations/banking/bulk-payment
+```
+**Request Body:**
+```json
+{
+  "paymentBatchId": "string",
+  "bankAccountId": "string",
+  "payments": [
+    {
+      "beneficiaryName": "string",
+      "accountNumber": "string",
+      "ifscCode": "string",
+      "amount": 50000,
+      "referenceNumber": "string"
+    }
+  ],
+  "totalAmount": 500000,
+  "paymentDate": "ISO8601"
+}
+```
+**Response:** `202 Accepted`
+
+---
+
+### 9.3 Payment Gateway Integration
+
+#### Initialize Payment
+```
+POST /api/v1/finance/integrations/payment-gateway/initialize
+```
+**Request Body:**
+```json
+{
+  "invoiceId": "string",
+  "studentId": "string",
+  "amount": 50000,
+  "currency": "INR",
+  "paymentPurpose": "string",
+  "returnUrl": "string",
+  "webhookUrl": "string"
+}
+```
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "data": {
+    "transactionId": "string",
+    "paymentUrl": "string",
+    "qrCode": "string",
+    "expiresAt": "ISO8601"
+  }
+}
+```
+
+#### Payment Webhook
+```
+POST /api/v1/finance/integrations/payment-gateway/webhook
+```
+**Request Body:**
+```json
+{
+  "transactionId": "string",
+  "status": "Success|Failed|Pending",
+  "amount": 50000,
+  "paymentMode": "string",
+  "gatewayTransactionId": "string",
+  "timestamp": "ISO8601"
+}
+```
+**Response:** `200 OK`
+
+---
+
+## Error Responses
+
+All endpoints follow standard error response format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable error message",
+    "details": "object (optional)",
+    "timestamp": "ISO8601"
+  }
+}
+```
+
+### Common Error Codes:
+- `AUTH_REQUIRED` (401): Authentication required
+- `FORBIDDEN` (403): Insufficient permissions
+- `NOT_FOUND` (404): Resource not found
+- `VALIDATION_ERROR` (400): Invalid request data
+- `DUPLICATE_ENTRY` (409): Resource already exists
+- `INSUFFICIENT_FUNDS` (422): Insufficient balance
+- `BUDGET_EXCEEDED` (422): Budget limit exceeded
+- `INVOICE_ALREADY_PAID` (409): Invoice already paid
+- `UNBALANCED_ENTRY` (400): Journal entry not balanced
+- `SERVER_ERROR` (500): Internal server error
+
+---
+
+## Rate Limiting
+
+- **Standard endpoints:** 100 requests per minute per user
+- **Report generation:** 20 requests per minute per user
+- **Payment processing:** 50 requests per minute per user
+- **Bulk operations:** 10 requests per minute per user
+- **External integrations:** 30 requests per minute per user
+
+Headers:
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1698765432
+```
+
+---
+
+## Webhooks
+
+Module 6 supports webhooks for real-time event notifications:
+
+**Supported Events:**
+- `payment.received`
+- `payment.failed`
+- `invoice.generated`
+- `budget.exceeded`
+- `bill.approved`
+- `salary.processed`
+- `po.approved`
+- `reconciliation.completed`
+
+**Webhook Endpoint Registration:**
+```
+POST /api/v1/finance/webhooks
+```
+**Request Body:**
+```json
+{
+  "url": "https://your-domain.com/webhook",
+  "events": ["payment.received", "budget.exceeded"],
+  "secret": "string"
+}
+```
+
+---
+
+## Total API Endpoints: 110+
+
+**Created:** October 2025  
+**Version:** 1.0  
+**Developer:** Developer 6

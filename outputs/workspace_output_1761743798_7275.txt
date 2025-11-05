@@ -1,0 +1,43 @@
+10. Git Workflow
+
+11. Code Review Checklist
+
+
+
+1. Project Structure
+1.1 Root Directory Structure
+
+  naac-system/
+  ├── src/
+  │ ├── config/             # Configuration files
+  │ ├── models/              # Database models (Universal + Module-specific)
+  │ │ ├── universal/          # Shared across all modules
+  │ │ └── modules/            # Module-specific models
+  │ │        ├── auth/
+  │ │        ├── academic/
+  │ │        ├── faculty/
+  │ │        ├── finance/
+│ │      ├── infrastructure/
+│ │      ├── quality/
+--
+10. Git Workflow
+10.1 Branch Naming
+
+ feature/[module]-[entity]-[description]
+ bugfix/[module]-[issue-description]
+ hotfix/[critical-issue]
+ refactor/[module]-[description]
+
+
+ Examples:
+ feature/academic-student-enrollment
+ bugfix/finance-payment-calculation
+ hotfix/auth-session-expiry
+ refactor/llm-query-optimization
+
+
+
+10.2 Commit Message Format
+
+ [MODULE] Type: Brief description
+

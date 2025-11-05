@@ -1,0 +1,3330 @@
+NAAC Compliance Management System - Developer SOP (Standard
+Operating Procedure)
+Document Information
+Version: 1.0
+Last Updated: October 2025
+Mandatory For: All 10 Development Teams
+Review Cycle: Every Sprint
+
+
+
+Table of Contents
+ 1. Project Structure
+
+ 2. Universal Collections
+
+ 3. Module-Specific Collections
+
+ 4. Collection Dependencies Map
+
+ 5. Naming Conventions
+
+ 6. Coding Standards
+
+ 7. Database Schema Guidelines
+
+ 8. API Development Guidelines
+
+ 9. Testing Requirements
+
+10. Git Workflow
+
+11. Code Review Checklist
+
+
+
+1. Project Structure
+1.1 Root Directory Structure
+
+  naac-system/
+  ├── src/
+  │ ├── config/             # Configuration files
+  │ ├── models/              # Database models (Universal + Module-specific)
+  │ │ ├── universal/          # Shared across all modules
+  │ │ └── modules/            # Module-specific models
+  │ │        ├── auth/
+  │ │        ├── academic/
+  │ │        ├── faculty/
+  │ │        ├── finance/
+│ │      ├── infrastructure/
+│ │      ├── quality/
+│ │      ├── research/
+│ │      ├── llm/
+│ │      └── system/
+│ ├── controllers/         # Business logic
+│ │ ├── universal/
+│ │ └── modules/
+│ │      ├── auth/
+│ │      ├── academic/
+│ │      └── ... (same as models)
+│ ├── middlewares/           # Express middlewares
+│ │ ├── auth.middleware.js
+│ │ ├── tenant.middleware.js
+│ │ ├── validation.middleware.js
+│ │ ├── rateLimit.middleware.js
+│ │ ├── audit.middleware.js
+│ │ └── errorHandler.middleware.js
+│ ├── routes/            # API routes
+│ │ ├── index.js           # Main router
+│ │ └── modules/
+│ │      ├── auth.routes.js
+│ │      ├── academic.routes.js
+│ │      └── ... (one per module)
+│ ├── services/           # Reusable business logic
+│ │ ├── universal/
+│ │ └── modules/
+│ ├── utils/            # Utility functions
+│ │ ├── validators/
+│ │ ├── helpers/
+│ │ ├── constants/
+│ │ └── logger/
+│ ├── validators/         # Input validation schemas (Joi/Yup)
+│ │ ├── universal/
+│ │ └── modules/
+│ ├── types/             # TypeScript definitions (if using TS)
+│ └── app.js             # Express app setup
+├── tests/           # Test files
+│ ├── unit/
+│ ├── integration/
+│ └── e2e/
+├── docs/               # Documentation
+├── scripts/            # Utility scripts
+├── .env.example           # Environment variables template
+├── .eslintrc.js        # ESLint configuration
+├── .prettierrc         # Prettier configuration
+  ├── package.json
+  └── README.md
+
+
+
+1.2 Module-Specific Folder Structure
+Each module follows this structure:
+
+  src/models/modules/[module-name]/
+  ├── [entity].model.js
+  └── index.js              # Export all models
+
+
+  src/controllers/modules/[module-name]/
+  ├── [entity].controller.js
+  └── index.js
+
+
+  src/routes/modules/
+  ├── [module-name].routes.js
+
+
+  src/services/modules/[module-name]/
+  ├── [entity].service.js
+  └── index.js
+
+
+  src/validators/modules/[module-name]/
+  ├── [entity].validator.js
+  └── index.js
+
+
+Example for Academic Module:
+
+
+  src/models/modules/academic/
+  ├── program.model.js
+  ├── course.model.js
+  ├── student.model.js
+  ├── enrollment.model.js
+  ├── grade.model.js
+  ├── attendance.model.js
+  └── index.js
+
+
+  src/controllers/modules/academic/
+  ├── program.controller.js
+  ├── course.controller.js
+  ├── student.controller.js
+  └── index.js
+2. Universal Collections
+Universal collections are shared across multiple modules and form the foundation of the system.
+
+2.1 Core Universal Collections
+Collection: tenants
+
+Used By: ALL modules
+Purpose: Multi-tenant data isolation
+Schema Location: src/models/universal/tenant.model.js
+
+  javascript
+
+  {
+      _id: ObjectId,
+      tenantId: String (unique, indexed),
+      institutionName: String,
+      institutionType: String,
+      domain: String,
+      configuration: Object,
+      isActive: Boolean,
+      createdAt: Date,
+      updatedAt: Date
+  }
+
+
+Referencing Modules:
+
+       Module 1: Auth
+
+       Module 2: Foundation Documents
+
+       Module 3: Academic
+
+       Module 4: Faculty
+
+       Module 5: Infrastructure
+
+       Module 6: Finance
+
+       Module 7: Quality Assurance
+
+       Module 8: Research
+
+       Module 9: LLM
+
+       Module 10: System Integration
+
+Developer Notes:
+
+       ALWAYS include tenantId in every collection
+
+       ALWAYS filter queries by tenantId using middleware
+       Never expose data across tenants
+
+
+
+Collection: users
+
+Used By: ALL modules
+Purpose: User authentication and authorization
+Schema Location: src/models/universal/user.model.js
+
+  javascript
+
+  {
+      _id: ObjectId,
+      userId: String (unique, indexed),
+      tenantId: String (FK → tenants, indexed),
+      email: String (unique per tenant, indexed),
+      password: String (hashed),
+      name: String,
+      roles: [String],
+      mfaEnabled: Boolean,
+      isActive: Boolean,
+      createdAt: Date,
+      updatedAt: Date
+  }
+
+
+Referencing Modules:
+
+       Module 1: Auth (owner)
+
+       Module 2: Foundation Documents (createdBy, updatedBy)
+
+       Module 3: Academic (faculty assignments, student profiles)
+
+       Module 4: Faculty (faculty profiles)
+
+       Module 5: Infrastructure (asset assignments)
+
+       Module 6: Finance (payment collectors, approvers)
+
+       Module 7: Quality (IQAC members, grievance handlers)
+
+       Module 8: Research (PIs, collaborators)
+
+       Module 9: LLM (chat sessions)
+
+       Module 10: System (dashboard owners, alert recipients)
+
+Developer Notes:
+
+       User is the central authentication entity
+
+       Use middleware to inject req.user in all routes
+       Implement proper role checks before operations
+
+
+
+Collection: departments
+
+Used By: Modules 3, 4, 5, 6, 8
+Purpose: Academic department organization
+Schema Location: src/models/universal/department.model.js
+
+  javascript
+
+  {
+      _id: ObjectId,
+      departmentId: String (unique, indexed),
+      tenantId: String (FK → tenants, indexed),
+      departmentName: String,
+      departmentCode: String (unique per tenant),
+      hodId: String (FK → faculty),
+      establishedDate: Date,
+      vision: String,
+      mission: String,
+      isActive: Boolean,
+      createdAt: Date,
+      updatedAt: Date
+  }
+
+
+Referencing Collections:
+
+        programs (Module 3)
+
+        courses (Module 3)
+
+        faculty (Module 4)
+
+        laboratories (Module 5)
+
+        budgets (Module 6)
+
+        purchaseOrders (Module 6)
+
+        researchProjects (Module 8)
+
+        extensionActivities (Module 8)
+
+Developer Notes:
+
+       Department is created by Module 3 (Academic) team
+
+       All other modules reference it as FK
+
+       Implement cascade soft-delete (set isActive=false)
+Collection: auditLogs
+
+Used By: ALL modules
+Purpose: Comprehensive activity tracking
+Schema Location: src/models/universal/auditLog.model.js
+
+  javascript
+
+  {
+      _id: ObjectId,
+      logId: String (unique, indexed),
+      userId: String (FK → users, indexed),
+      tenantId: String (FK → tenants, indexed),
+      module: String (indexed),
+      action: String (Create|Update|Delete|View|Export),
+      entity: String (indexed),
+      entityId: String,
+      changes: {
+       before: Object,
+       after: Object
+      },
+      timestamp: Date (indexed),
+      ipAddress: String,
+      userAgent: String,
+      status: String (Success|Failed)
+  }
+
+
+Developer Notes:
+
+       Use audit middleware for automatic logging
+
+       NEVER manually insert audit logs in controllers
+
+       Configure TTL index for log retention (e.g., 365 days)
+
+
+
+Collection: roles
+
+Used By: Module 1 (Auth)
+Purpose: Role-based access control
+Schema Location: src/models/universal/role.model.js
+
+  javascript
+  {
+      _id: ObjectId,
+      roleId: String (unique, indexed),
+      roleName: String,
+      description: String,
+      permissions: [String],
+      level: Number,
+      isActive: Boolean,
+      createdAt: Date,
+      updatedAt: Date
+  }
+
+
+Developer Notes:
+
+       Managed by Module 1 team
+
+       Other modules only read from this collection
+
+       Permissions checked via middleware
+
+
+
+Collection: permissions
+
+Used By: Module 1 (Auth)
+Purpose: Granular access control
+Schema Location: src/models/universal/permission.model.js
+
+  javascript
+
+  {
+      _id: ObjectId,
+      permissionId: String (unique, indexed),
+      resource: String,
+      actions: [String],
+      module: String,
+      description: String,
+      isActive: Boolean
+  }
+
+
+Developer Notes:
+
+       Managed by Module 1 team
+
+       Define permissions in constants file
+
+       Use permission middleware in routes
+
+
+
+Collection: buildings
+Used By: Modules 3, 5
+Purpose: Physical infrastructure organization
+Schema Location: src/models/universal/building.model.js
+
+  javascript
+
+  {
+      _id: ObjectId,
+      buildingId: String (unique, indexed),
+      tenantId: String (FK → tenants, indexed),
+      buildingName: String,
+      buildingCode: String,
+      buildingType: String,
+      floors: Number,
+      totalArea: Number,
+      location: Object,
+      isActive: Boolean,
+      createdAt: Date,
+      updatedAt: Date
+  }
+
+
+Referencing Collections:
+
+        rooms (Module 5)
+
+        assets (Module 5)
+
+        timetables (Module 3)
+
+Developer Notes:
+
+       Created by Module 5 (Infrastructure) team
+
+       Referenced by Module 3 for room scheduling
+
+
+
+Collection: rooms
+
+Used By: Modules 3, 5
+Purpose: Room management and scheduling
+Schema Location: src/models/universal/room.model.js
+
+  javascript
+  {
+      _id: ObjectId,
+      roomId: String (unique, indexed),
+      buildingId: String (FK → buildings, indexed),
+      roomNumber: String,
+      roomType: String,
+      capacity: Number,
+      facilities: [String],
+      isAvailable: Boolean,
+      isActive: Boolean,
+      createdAt: Date,
+      updatedAt: Date
+  }
+
+
+Referencing Collections:
+
+        timetables (Module 3)
+
+        roomBookings (Module 5)
+
+        assets (Module 5)
+
+        laboratories (Module 5)
+
+Developer Notes:
+
+       Created by Module 5 team
+
+       Module 3 team checks availability before scheduling
+
+
+
+Collection: vendors
+
+Used By: Modules 5, 6
+Purpose: Vendor/supplier management
+Schema Location: src/models/universal/vendor.model.js
+
+  javascript
+  {
+      _id: ObjectId,
+      vendorId: String (unique, indexed),
+      tenantId: String (FK → tenants, indexed),
+      vendorName: String,
+      vendorType: String,
+      contactPerson: String,
+      email: String,
+      phone: String,
+      gstin: String,
+      isActive: Boolean,
+      createdAt: Date,
+      updatedAt: Date
+  }
+
+
+Referencing Collections:
+
+        purchaseOrders (Module 6)
+
+        bills (Module 6)
+
+        inventory (Module 5)
+
+Developer Notes:
+
+       Managed by Module 6 (Finance) team
+
+       Module 5 reads vendor info for inventory
+
+
+
+2.2 Universal Collections Summary Table
+ Collection                 Owner Module          Used By Modules   Purpose
+
+  tenants                   Module 1              ALL               Multi-tenant isolation
+
+  users                     Module 1              ALL               Authentication & Authorization
+
+  departments               Module 3              3, 4, 5, 6, 8     Academic organization
+
+  auditLogs                 System                ALL               Activity tracking
+
+  roles                     Module 1              ALL               Role-based access
+
+  permissions               Module 1              ALL               Granular permissions
+
+  buildings                 Module 5              3, 5              Infrastructure organization
+
+  rooms                     Module 5              3, 5              Room management
+
+  vendors                   Module 6              5, 6              Vendor management
+3. Module-Specific Collections
+3.1 Module 1: Authentication & User Management
+Owner: Developer 1
+Collections:
+
+    users (Universal - owner)
+
+    roles (Universal - owner)
+
+    permissions (Universal - owner)
+
+    tenants (Universal - owner)
+
+    sessions
+
+    mfaTokens
+
+Dependencies:
+
+    None (foundational module)
+
+
+
+3.2 Module 2: Institutional Foundation Documents
+Owner: Developer 2
+Collections:
+
+    documents
+
+    documentVersions
+
+    documentTemplates
+
+    approvalWorkflows
+
+Dependencies:
+
+    tenants (Universal)
+
+    users (Universal)
+
+
+
+3.3 Module 3: Academic Program Management
+Owner: Developer 3
+Collections:
+
+    departments (Universal - owner)
+
+    programs
+
+    courses
+
+    syllabi
+    students
+
+    enrollments
+
+    grades
+
+    assessments
+
+    timetables
+
+    attendances
+
+
+Dependencies:
+
+    tenants (Universal)
+
+    users (Universal)
+
+    departments (Universal - owner)
+
+    rooms (Universal - from Module 5)
+
+    buildings (Universal - from Module 5)
+
+    faculty (Module 4)
+
+Special Notes:
+
+    Creates departments collection
+
+    References faculty from Module 4
+
+    References rooms from Module 5
+
+
+
+3.4 Module 4: Faculty & Staff Management
+Owner: Developer 4
+Collections:
+
+    faculty
+
+    publications
+
+    patents (shared with Module 8)
+
+    professionalDevelopment
+
+    performanceReviews
+
+Dependencies:
+
+    tenants (Universal)
+
+    users (Universal)
+
+    departments (Universal - from Module 3)
+    courses (Module 3)
+
+
+Special Notes:
+
+    References departments from Module 3
+
+    patents collection shared with Module 8
+
+
+
+3.5 Module 5: Infrastructure & Resources
+Owner: Developer 5
+Collections:
+
+    buildings (Universal - owner)
+
+    rooms (Universal - owner)
+
+    assets
+
+    assetTransfers
+
+    laboratories
+
+    labEquipments
+
+    labSessions
+
+    roomBookings
+
+    maintenanceRequests
+
+    inventories
+
+    stockEntries
+
+    stockIssues
+
+Dependencies:
+
+    tenants (Universal)
+
+    users (Universal)
+
+    departments (Universal - from Module 3)
+
+    vendors (Universal - from Module 6)
+
+    faculty (Module 4)
+
+    courses (Module 3)
+
+Special Notes:
+
+    Creates buildings and rooms (Universal collections)
+
+    References vendors from Module 6
+3.6 Module 6: Financial & Administrative
+Owner: Developer 6
+Collections:
+
+    vendors (Universal - owner)
+
+    accounts
+
+    journalEntries
+
+    budgets
+
+    budgetAllocations
+
+    feeStructures
+
+    feeInvoices
+
+    payments
+
+    scholarships
+
+    scholarshipApplications
+
+    purchaseOrders
+
+    bills
+
+    payrolls
+
+    salarySlips
+
+Dependencies:
+
+    tenants (Universal)
+
+    users (Universal)
+
+    departments (Universal - from Module 3)
+
+    programs (Module 3)
+
+    students (Module 3)
+
+    faculty (Module 4)
+
+Special Notes:
+
+    Creates vendors (Universal collection)
+
+    Heavy dependency on Module 3 (students, programs)
+3.7 Module 7: Student Services & Quality Assurance
+Owner: Developer 7
+Collections:
+
+    iqac
+
+    iqacMembers
+
+    iqacMeetings
+
+    meetingMinutes
+
+    actionItems
+
+    aqar
+
+    aqarCriteria
+
+    ssr
+
+    ssrDocuments
+
+    grievances
+
+    grievanceActions
+
+    surveys
+
+    surveyResponses
+
+    alumni
+
+    alumniFeedback
+
+    bestPractices
+
+    bestPracticeEvidence
+
+Dependencies:
+
+    tenants (Universal)
+
+    users (Universal)
+
+    students (Module 3)
+
+    programs (Module 3)
+
+Special Notes:
+
+    Heavy integration with NAAC requirements
+
+    References students for grievances and surveys
+
+
+
+3.8 Module 8: Research & External Relations
+Owner: Developer 8
+Collections:
+
+    researchProjects
+
+    projectMilestones
+
+    projectExpenditures
+
+    progressReports
+
+    grants
+
+    grantApplications
+
+    patents (shared with Module 4)
+
+    patentLicenses
+
+    royaltyPayments
+
+    copyrights
+
+    trademarks
+
+    mous
+
+    mouActivities
+
+    consultancyProjects
+
+    deliverables
+
+    extensionActivities
+
+    activityImpacts
+
+    adoptedVillages
+
+    villageActivities
+
+    startups
+
+    startupProgress
+
+    collaborators
+
+Dependencies:
+
+    tenants (Universal)
+
+    users (Universal)
+
+    departments (Universal - from Module 3)
+
+    faculty (Module 4)
+    students (Module 3)
+
+Special Notes:
+
+    Shares patents collection with Module 4
+
+    References faculty for research projects
+
+
+
+3.9 Module 9: LLM Integration & Conversational Interface
+Owner: Developer 9
+Collections:
+
+    chatSessions
+
+    chatMessages
+
+    documentBuilders
+
+    builderSteps
+
+    nlQueries
+
+    queryResults
+
+    intentLogs
+
+    feedbackLogs
+
+Dependencies:
+
+    tenants (Universal)
+
+    users (Universal)
+
+    ALL module collections (for data queries)
+
+Special Notes:
+
+    Read-only access to most collections
+
+    Can trigger creation in other modules via APIs
+
+
+
+3.10 Module 10: System Integration & Analytics Dashboard
+Owner: Developer 10
+Collections:
+
+    dashboards
+
+    widgets
+
+    integrations
+      integrationLogs
+
+      notifications
+
+      notificationDeliveries
+
+      alerts
+
+      alertActions
+
+      backups
+
+      backupFiles
+
+      systemConfigurations
+
+      scheduledReports
+
+Dependencies:
+
+      tenants (Universal)
+
+      users (Universal)
+
+      ALL module collections (for analytics and integration)
+
+Special Notes:
+
+      Read access to ALL collections
+
+      Manages system-wide integrations
+
+
+
+4. Collection Dependencies Map
+4.1 Visual Dependency Map
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │              UNIVERSAL COLLECTIONS                          │
+  │ (Managed by Modules 1, 3, 5, 6 but used by ALL)             │
+  ├─────────────────────────────────────────────────────────────┤
+  │ tenants, users, departments, buildings, rooms, vendors,     │
+  │ roles, permissions, auditLogs                       │
+  └─────────────────────────────────────────────────────────────┘
+                      ▲
+                      │
+        ┌───────────────────┼───────────────────┐
+        │             │                │
+        ▼                 ▼            ▼
+  ┌──────────────┐                ┌──────────────┐ ┌──────────────┐
+  │ Module 1      │       │ Module 3       │   │ Module 5   │
+  │ Auth        │◄───┤ Academic                │───►│ Infra     │
+  │            │ │            │   │             │
+ │ Creates:    │ │ Creates:             │     │ Creates:        │
+ │ - tenants │        │ - dept       │       │ - buildings │
+ │ - users    │       │ - programs │ │ - rooms                  │
+ │ - roles    │    │ - students │            │              │
+ └──────────────┘                     └──────────────┘ └──────────────┘
+      ▲                   ▲                 ▲
+      │                │                 │
+      └───────────────────┼───────────────────┘
+                      │
+      ┌───────────────────┼───────────────────┐
+      │                │                 │
+      ▼                   ▼                 ▼
+ ┌──────────────┐                     ┌──────────────┐ ┌──────────────┐
+ │ Module 4       │       │ Module 6         │     │ Module 8           │
+ │ Faculty     │      │ Finance         │        │ Research     │
+ │           │ │                │   │               │
+ │ Depends:       │    │ Creates:        │       │ Depends:         │
+ │ - dept     │ │ - vendors │                │ - faculty │
+ │ - courses │ │ Depends:                │       │ - dept       │
+ │           │ │ - students │            │              │
+ └──────────────┘                     └──────────────┘ └──────────────┘
+      ▲                   ▲                 ▲
+      │                │                 │
+      └───────────────────┼───────────────────┘
+                      │
+      ┌───────────────────┼───────────────────┐
+      │                │                 │
+      ▼                   ▼                 ▼
+ ┌──────────────┐                     ┌──────────────┐ ┌──────────────┐
+ │ Module 7       │       │ Module 9         │     │ Module 10 │
+ │ Quality     │      │ LLM             │        │ System       │
+ │           │ │                │   │               │
+ │ Depends:       │    │ Depends:            │    │ Depends:        │
+ │ - students │       │ - ALL           │     │ - ALL           │
+ │ - programs │ │ (read-only) │                   │ (analytics) │
+ └──────────────┘                     └──────────────┘ └──────────────┘
+
+
+
+4.2 Detailed Dependency Matrix
+ Module                       Creates (Owns)                                            Depends On (Reads/References)
+
+ Module 1: Auth               tenants, users, roles, permissions, sessions, mfaTokens   None
+
+                              documents, documentVersions, documentTemplates,
+ Module 2: Docs                                                                         tenants, users
+                              approvalWorkflows
+
+ Module 3:                    departments*, programs, courses, students, enrollments,   tenants, users, rooms, buildings,
+ Academic                     grades, attendances, timetables, assessments              faculty
+ Module                    Creates (Owns)                                                Depends On (Reads/References)
+
+                           faculty, publications, patents*, professionalDevelopment,
+ Module 4: Faculty                                                                       tenants, users, departments, courses
+                           performanceReviews
+
+ Module 5:                 buildings*, rooms*, assets, laboratories,                     tenants, users, departments, vendors,
+ Infrastructure            maintenanceRequests, inventories, stockEntries                faculty, courses
+
+                           vendors*, accounts, budgets, feeStructures, payments,         tenants, users, departments,
+ Module 6: Finance
+                           scholarships, purchaseOrders, payrolls                        programs, students, faculty
+
+ Module 7: Quality         iqac, aqar, ssr, grievances, surveys, alumni, bestPractices   tenants, users, students, programs
+
+ Module 8:                 researchProjects, grants, patents*, mous,                     tenants, users, departments, faculty,
+ Research                  consultancyProjects, extensionActivities, startups            students
+
+ Module 9: LLM             chatSessions, chatMessages, documentBuilders, nlQueries       tenants, users, ALL (read-only)
+
+                           dashboards, integrations, notifications, alerts, backups,
+ Module 10: System                                                                       tenants, users, ALL (for analytics)
+                           systemConfigurations
+
+
+*Note: Collections marked with * are either Universal collections or shared between modules
+
+
+
+5. Naming Conventions
+5.1 File Naming
+Models
+
+  [entity-name].model.js
+  Example: student.model.js, feeInvoice.model.js
+
+
+Controllers
+
+  [entity-name].controller.js
+  Example: student.controller.js
+
+
+Services
+
+  [entity-name].service.js
+  Example: student.service.js
+
+
+Routes
+
+  [module-name].routes.js
+  Example: academic.routes.js
+
+
+Validators
+  [entity-name].validator.js
+  Example: student.validator.js
+
+
+Middlewares
+
+  [purpose].middleware.js
+  Example: auth.middleware.js, tenant.middleware.js
+
+
+
+5.2 Code Naming
+Variables
+
+  javascript
+
+  // camelCase
+  const studentData = {};
+  const totalAmount = 0;
+  const isActive = true;
+
+
+Constants
+
+  javascript
+
+  // UPPER_SNAKE_CASE
+  const MAX_LOGIN_ATTEMPTS = 5;
+  const DEFAULT_PAGE_SIZE = 20;
+  const API_VERSION = 'v1';
+
+
+Functions
+
+  javascript
+
+  // camelCase, verb-first
+  const getStudentById = async (studentId) => {};
+  const createFeeInvoice = async (data) => {};
+  const updateGrade = async (gradeId, data) => {};
+  const deleteDocument = async (documentId) => {};
+
+
+Classes
+
+  javascript
+
+  // PascalCase
+  class StudentService {}
+  class FeeInvoiceController {}
+
+
+Database Collections
+  javascript
+
+  // camelCase (MongoDB convention)
+  const students = db.collection('students');
+  const feeInvoices = db.collection('feeInvoices');
+
+
+API Endpoints
+
+  javascript
+
+  // kebab-case
+  GET /api/v1/academic/students
+  POST /api/v1/finance/fee-invoices
+  PUT /api/v1/quality-assurance/iqac-meetings/:id
+
+
+
+
+6. Coding Standards
+6.1 Model Structure
+Location: src/models/[universal|modules]/[module]/[entity].model.js
+
+  javascript
+const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
+
+
+/**
+* Student Schema
+* Module: Academic (Module 3)
+* Dependencies: users, tenants, programs
+*/
+const studentSchema = new mongoose.Schema(
+ {
+     // Primary Key - Always use custom string ID
+     studentId: {
+      type: String,
+      default: () => uuidv4(),
+      unique: true,
+      required: true,
+      index: true
+     },
+
+
+     // Foreign Keys - Always indexed
+     tenantId: {
+      type: String,
+      required: true,
+      index: true,
+      ref: 'Tenant'
+     },
+
+
+     userId: {
+      type: String,
+      required: true,
+      ref: 'User'
+     },
+
+
+     programId: {
+      type: String,
+      required: true,
+      index: true,
+      ref: 'Program'
+     },
+
+
+     // Unique identifiers
+     rollNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true
+     },
+
+
+     // Regular fields
+     currentSemester: {
+         type: Number,
+         required: true,
+         min: 1,
+         max: 10
+     },
+
+
+     // Embedded objects
+     personalInfo: {
+         dateOfBirth: Date,
+         gender: {
+             type: String,
+             enum: ['Male', 'Female', 'Other']
+         },
+         bloodGroup: String,
+         category: {
+             type: String,
+             enum: ['General', 'SC', 'ST', 'OBC']
+         }
+     },
+
+
+     // Status field - Always include
+     status: {
+         type: String,
+         enum: ['Active', 'Inactive', 'Graduated', 'Discontinued'],
+         default: 'Active'
+     },
+
+
+     // Active flag - For soft deletes
+     isActive: {
+         type: Boolean,
+         default: true
+     }
+ },
+ {
+     // Timestamps - Always enable
+     timestamps: true,
+
+
+     // Collection name
+     collection: 'students'
+ }
+);
+
+
+// Compound Indexes
+  studentSchema.index({ tenantId: 1, rollNumber: 1 });
+  studentSchema.index({ tenantId: 1, programId: 1, currentSemester: 1 });
+
+
+  // Virtual fields (if needed)
+  studentSchema.virtual('fullName').get(function() {
+   return `${this.personalInfo.firstName} ${this.personalInfo.lastName}`;
+  });
+
+
+  // Instance methods
+  studentSchema.methods.isEnrolledInSemester = function(semester) {
+   return this.currentSemester === semester;
+  };
+
+
+  // Static methods
+  studentSchema.statics.findByTenant = function(tenantId) {
+   return this.find({ tenantId, isActive: true });
+  };
+
+
+  // Pre-save hooks
+  studentSchema.pre('save', function(next) {
+   // Add any pre-save logic here
+   next();
+  });
+
+
+  // Export
+  const Student = mongoose.model('Student', studentSchema);
+  module.exports = Student;
+
+
+Key Rules:
+
+  1. Always use custom string IDs (UUID)
+
+  2. Always include tenantId as indexed FK
+
+  3. Always include isActive for soft deletes
+
+  4. Enable timestamps
+
+  5. Add compound indexes for frequent query patterns
+
+  6. Document dependencies in comments
+
+  7. Use proper validation and enums
+
+
+
+6.2 Controller Structure
+Location: src/controllers/modules/[module]/[entity].controller.js
+
+  javascript
+const { StudentService } = require('../../../services/modules/academic');
+const { AppError } = require('../../../utils/errors');
+const { successResponse } = require('../../../utils/responses');
+const logger = require('../../../utils/logger');
+
+
+/**
+* Student Controller
+* Module: Academic (Module 3)
+* Handles HTTP requests for student operations
+*/
+class StudentController {
+
+
+ /**
+  * Get all students with pagination and filtering
+  * @route GET /api/v1/academic/students
+  */
+ async getStudents(req, res, next) {
+  try {
+      const {
+       page = 1,
+       limit = 20,
+       programId,
+       semester,
+       status
+      } = req.query;
+
+
+      const tenantId = req.user.tenantId;
+
+
+      // Build filter
+      const filter = { tenantId, isActive: true };
+      if (programId) filter.programId = programId;
+      if (semester) filter.currentSemester = parseInt(semester);
+      if (status) filter.status = status;
+
+
+      // Call service
+      const result = await StudentService.getStudents(
+       filter,
+       { page: parseInt(page), limit: parseInt(limit) }
+      );
+
+
+      // Return response
+      return successResponse(res, result, 'Students retrieved successfully');
+
+
+  } catch (error) {
+      logger.error('Error in getStudents:', error);
+      next(error);
+    }
+}
+
+
+/**
+* Get student by ID
+* @route GET /api/v1/academic/students/:studentId
+*/
+async getStudentById(req, res, next) {
+    try {
+        const { studentId } = req.params;
+        const tenantId = req.user.tenantId;
+
+
+        const student = await StudentService.getStudentById(studentId, tenantId);
+
+
+        if (!student) {
+            throw new AppError('Student not found', 404);
+        }
+
+
+        return successResponse(res, student, 'Student retrieved successfully');
+
+
+    } catch (error) {
+        logger.error('Error in getStudentById:', error);
+        next(error);
+    }
+}
+
+
+/**
+* Create new student
+* @route POST /api/v1/academic/students
+*/
+async createStudent(req, res, next) {
+    try {
+        const tenantId = req.user.tenantId;
+        const userId = req.user.userId;
+
+
+        const studentData = {
+            ...req.body,
+            tenantId,
+            createdBy: userId
+        };
+
+
+        const student = await StudentService.createStudent(studentData);
+
+
+        return successResponse(
+            res,
+            student,
+            'Student created successfully',
+            201
+        );
+
+
+    } catch (error) {
+        logger.error('Error in createStudent:', error);
+        next(error);
+    }
+}
+
+
+/**
+* Update student
+* @route PUT /api/v1/academic/students/:studentId
+*/
+async updateStudent(req, res, next) {
+    try {
+        const { studentId } = req.params;
+        const tenantId = req.user.tenantId;
+        const userId = req.user.userId;
+
+
+        const updateData = {
+            ...req.body,
+            updatedBy: userId
+        };
+
+
+        const student = await StudentService.updateStudent(
+            studentId,
+            tenantId,
+            updateData
+        );
+
+
+        if (!student) {
+            throw new AppError('Student not found', 404);
+        }
+
+
+        return successResponse(res, student, 'Student updated successfully');
+
+
+    } catch (error) {
+        logger.error('Error in updateStudent:', error);
+        next(error);
+    }
+}
+
+
+/**
+* Delete student (soft delete)
+* @route DELETE /api/v1/academic/students/:studentId
+*/
+async deleteStudent(req, res, next) {
+          try {
+              const { studentId } = req.params;
+              const tenantId = req.user.tenantId;
+
+
+              await StudentService.deleteStudent(studentId, tenantId);
+
+
+              return successResponse(res, null, 'Student deleted successfully');
+
+
+          } catch (error) {
+              logger.error('Error in deleteStudent:', error);
+              next(error);
+          }
+      }
+  }
+
+
+  module.exports = new StudentController();
+
+
+Key Rules:
+
+ 1. Always wrap in try-catch
+
+ 2. Extract tenantId from req.user
+
+ 3. Validate permissions before operations
+
+ 4. Use service layer for business logic
+
+ 5. Use standardized response format
+
+ 6. Log errors with context
+
+ 7. Use next(error) for error handling
+
+ 8. Add JSDoc comments
+
+
+
+6.3 Service Structure
+Location: src/services/modules/[module]/[entity].service.js
+
+  javascript
+const Student = require('../../../models/modules/academic/student.model');
+const Program = require('../../../models/modules/academic/program.model');
+const User = require('../../../models/universal/user.model');
+const { AppError } = require('../../../utils/errors');
+const logger = require('../../../utils/logger');
+
+
+/**
+* Student Service
+* Module: Academic (Module 3)
+* Business logic for student operations
+*/
+class StudentService {
+
+
+ /**
+  * Get students with pagination
+  */
+ async getStudents(filter, options) {
+     const { page, limit } = options;
+     const skip = (page - 1) * limit;
+
+
+     const [students, total] = await Promise.all([
+      Student.find(filter)
+           .populate('userId', 'name email')
+           .populate('programId', 'programName programCode')
+           .skip(skip)
+           .limit(limit)
+           .sort({ createdAt: -1 })
+           .lean(),
+      Student.countDocuments(filter)
+     ]);
+
+
+     return {
+      data: students,
+      pagination: {
+           currentPage: page,
+           totalPages: Math.ceil(total / limit),
+           totalItems: total,
+           hasNext: page < Math.ceil(total / limit),
+           hasPrev: page > 1
+      }
+     };
+ }
+
+
+ /**
+  * Get student by ID
+  */
+async getStudentById(studentId, tenantId) {
+    const student = await Student.findOne({
+        studentId,
+        tenantId,
+        isActive: true
+    })
+        .populate('userId', 'name email')
+        .populate('programId', 'programName programCode')
+        .lean();
+
+
+    return student;
+}
+
+
+/**
+* Create new student
+*/
+async createStudent(data) {
+    // Validate program exists
+    const program = await Program.findOne({
+        programId: data.programId,
+        tenantId: data.tenantId,
+        isActive: true
+    });
+
+
+    if (!program) {
+        throw new AppError('Program not found', 404);
+    }
+
+
+    // Validate user exists
+    const user = await User.findOne({
+        userId: data.userId,
+        tenantId: data.tenantId,
+        isActive: true
+    });
+
+
+    if (!user) {
+        throw new AppError('User not found', 404);
+    }
+
+
+    // Check if student with same roll number exists
+    const existingStudent = await Student.findOne({
+        rollNumber: data.rollNumber,
+        tenantId: data.tenantId
+    });
+
+
+    if (existingStudent) {
+        throw new AppError('Student with this roll number already exists', 409);
+    }
+
+
+    // Create student
+    const student = new Student(data);
+    await student.save();
+
+
+    logger.info(`Student created: ${student.studentId}`);
+
+
+    return student;
+}
+
+
+/**
+* Update student
+*/
+async updateStudent(studentId, tenantId, updateData) {
+    // Prevent updating certain fields
+    delete updateData.studentId;
+    delete updateData.tenantId;
+    delete updateData.userId;
+    delete updateData.createdAt;
+
+
+    const student = await Student.findOneAndUpdate(
+        { studentId, tenantId, isActive: true },
+        { $set: updateData },
+        { new: true, runValidators: true }
+    );
+
+
+    if (!student) {
+        throw new AppError('Student not found', 404);
+    }
+
+
+    logger.info(`Student updated: ${studentId}`);
+
+
+    return student;
+}
+
+
+/**
+* Delete student (soft delete)
+*/
+async deleteStudent(studentId, tenantId) {
+    const student = await Student.findOneAndUpdate(
+        { studentId, tenantId, isActive: true },
+        { $set: { isActive: false } },
+        { new: true }
+    );
+
+
+    if (!student) {
+              throw new AppError('Student not found', 404);
+          }
+
+
+          logger.info(`Student deleted: ${studentId}`);
+
+
+          return student;
+      }
+
+
+      /**
+      * Get students by program
+      */
+      async getStudentsByProgram(programId, tenantId) {
+          return Student.find({
+              programId,
+              tenantId,
+              isActive: true
+          })
+              .populate('userId', 'name email')
+              .lean();
+      }
+  }
+
+
+  module.exports = new StudentService();
+
+
+Key Rules:
+
+ 1. All business logic goes here
+
+ 2. Validate dependencies (FK references)
+
+ 3. Check for duplicates before creation
+
+ 4. Use transactions for multi-collection operations
+
+ 5. Implement proper error handling
+
+ 6. Log important operations
+
+ 7. Use .lean() for read-only operations
+
+ 8. Prevent updating sensitive fields
+
+
+
+6.4 Route Structure
+Location: src/routes/modules/academic.routes.js
+
+  javascript
+const express = require('express');
+const router = express.Router();
+
+
+// Controllers
+const {
+ StudentController,
+ ProgramController,
+ CourseController,
+ GradeController
+} = require('../../controllers/modules/academic');
+
+
+// Middlewares
+const { authenticate } = require('../../middlewares/auth.middleware');
+const { checkPermission } = require('../../middlewares/permission.middleware');
+const { validateRequest } = require('../../middlewares/validation.middleware');
+const { rateLimitByRole } = require('../../middlewares/rateLimit.middleware');
+
+
+// Validators
+const {
+ createStudentValidator,
+ updateStudentValidator,
+ getStudentValidator
+} = require('../../validators/modules/academic/student.validator');
+
+
+/**
+* Student Routes
+* Base: /api/v1/academic/students
+*/
+
+
+// Get all students
+router.get(
+ '/students',
+ authenticate,
+ checkPermission('students', 'read'),
+ rateLimitByRole,
+ StudentController.getStudents
+);
+
+
+// Get student by ID
+router.get(
+ '/students/:studentId',
+ authenticate,
+ checkPermission('students', 'read'),
+ validateRequest(getStudentValidator),
+ StudentController.getStudentById
+);
+// Create student
+router.post(
+ '/students',
+ authenticate,
+ checkPermission('students', 'create'),
+ validateRequest(createStudentValidator),
+ StudentController.createStudent
+);
+
+
+// Update student
+router.put(
+ '/students/:studentId',
+ authenticate,
+ checkPermission('students', 'update'),
+ validateRequest(updateStudentValidator),
+ StudentController.updateStudent
+);
+
+
+// Delete student
+router.delete(
+ '/students/:studentId',
+ authenticate,
+ checkPermission('students', 'delete'),
+ StudentController.deleteStudent
+);
+
+
+/**
+* Program Routes
+* Base: /api/v1/academic/programs
+*/
+router.get('/programs', authenticate, ProgramController.getPrograms);
+router.get('/programs/:programId', authenticate, ProgramController.getProgramById);
+router.post('/programs', authenticate, checkPermission('programs', 'create'), ProgramController.createProgram);
+router.put('/programs/:programId', authenticate, checkPermission('programs', 'update'), ProgramController.updateProgram);
+router.delete('/programs/:programId', authenticate, checkPermission('programs', 'delete'), ProgramController.deleteProgram);
+
+
+/**
+* Course Routes
+* Base: /api/v1/academic/courses
+*/
+router.get('/courses', authenticate, CourseController.getCourses);
+router.post('/courses', authenticate, checkPermission('courses', 'create'), CourseController.createCourse);
+
+
+/**
+* Grade Routes
+* Base: /api/v1/academic/grades
+  */
+  router.get('/grades/student/:studentId', authenticate, GradeController.getStudentGrades);
+  router.post('/grades', authenticate, checkPermission('grades', 'create'), GradeController.createGrade);
+
+
+  module.exports = router;
+
+
+
+Key Rules:
+
+ 1. Apply middleware in order: authenticate → permissions → validation → controller
+
+ 2. Use descriptive route comments
+
+ 3. Group related routes together
+
+ 4. Always require authentication
+
+ 5. Check permissions before operations
+
+ 6. Validate request data
+
+ 7. Apply rate limiting
+
+ 8. Use proper HTTP methods
+
+
+
+6.5 Middleware Structure
+Authentication Middleware
+
+Location: src/middlewares/auth.middleware.js
+
+  javascript
+const jwt = require('jsonwebtoken');
+const { AppError } = require('../utils/errors');
+const User = require('../models/universal/user.model');
+const Session = require('../models/modules/auth/session.model');
+
+
+/**
+* Authenticate user via JWT token
+*/
+exports.authenticate = async (req, res, next) => {
+ try {
+  // Extract token from header
+  const authHeader = req.headers.authorization;
+
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new AppError('Authentication required', 401);
+  }
+
+
+  const token = authHeader.split(' ')[1];
+
+
+  // Verify token
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+
+  // Check if session is valid
+  const session = await Session.findOne({
+      token,
+      userId: decoded.userId,
+      isActive: true,
+      expiresAt: { $gt: new Date() }
+  });
+
+
+  if (!session) {
+      throw new AppError('Invalid or expired session', 401);
+  }
+
+
+  // Get user
+  const user = await User.findOne({
+      userId: decoded.userId,
+      isActive: true
+  }).select('-password');
+
+
+  if (!user) {
+      throw new AppError('User not found', 404);
+  }
+
+
+  // Attach user to request
+  req.user = {
+           userId: user.userId,
+           tenantId: user.tenantId,
+           email: user.email,
+           name: user.name,
+           roles: user.roles
+       };
+
+
+       next();
+   } catch (error) {
+       if (error.name === 'JsonWebTokenError') {
+           return next(new AppError('Invalid token', 401));
+       }
+       if (error.name === 'TokenExpiredError') {
+           return next(new AppError('Token expired', 401));
+       }
+       next(error);
+   }
+  };
+
+
+Tenant Middleware
+
+Location: src/middlewares/tenant.middleware.js
+
+  javascript
+  /**
+  * Inject tenantId filter into queries
+  * CRITICAL: Use this for all database queries
+  */
+  exports.injectTenantFilter = (req, res, next) => {
+   if (!req.user || !req.user.tenantId) {
+       return next(new AppError('Tenant ID missing', 400));
+   }
+
+
+   // Store original query methods
+   const originalFind = mongoose.Model.find;
+   const originalFindOne = mongoose.Model.findOne;
+   const originalFindById = mongoose.Model.findById;
+
+
+   // Override find methods to inject tenantId
+   mongoose.Model.find = function(conditions, ...args) {
+       if (this.collection.name !== 'tenants') {
+           conditions = conditions || {};
+           conditions.tenantId = req.user.tenantId;
+       }
+       return originalFind.call(this, conditions, ...args);
+   };
+
+
+   // Similar overrides for findOne and findById...
+
+
+   next();
+  };
+
+
+Permission Middleware
+
+Location: src/middlewares/permission.middleware.js
+
+  javascript
+  const Permission = require('../models/universal/permission.model');
+  const Role = require('../models/universal/role.model');
+  const { AppError } = require('../utils/errors');
+
+
+  /**
+  * Check if user has permission for resource and action
+  */
+  exports.checkPermission = (resource, action) => {
+   return async (req, res, next) => {
+       try {
+           const userRoles = req.user.roles;
+
+
+           // Get roles with permissions
+           const roles = await Role.find({
+               roleId: { $in: userRoles },
+               isActive: true
+           }).populate('permissions');
+
+
+           // Check if any role has the required permission
+           const hasPermission = roles.some(role =>
+               role.permissions.some(permission =>
+                   permission.resource === resource &&
+                   permission.actions.includes(action)
+               )
+           );
+
+
+           if (!hasPermission) {
+               throw new AppError(
+                   `Permission denied: ${action} on ${resource}`,
+                   403
+               );
+           }
+
+
+           next();
+       } catch (error) {
+           next(error);
+       }
+   };
+  };
+
+
+Validation Middleware
+
+Location: src/middlewares/validation.middleware.js
+
+  javascript
+  const { AppError } = require('../utils/errors');
+
+
+  /**
+  * Validate request using Joi schema
+  */
+  exports.validateRequest = (schema) => {
+   return (req, res, next) => {
+       const { error, value } = schema.validate(req.body, {
+           abortEarly: false,
+           stripUnknown: true
+       });
+
+
+       if (error) {
+           const errors = error.details.map(detail => ({
+            field: detail.path.join('.'),
+            message: detail.message
+           }));
+
+
+           throw new AppError('Validation error', 400, errors);
+       }
+
+
+       // Replace req.body with validated value
+       req.body = value;
+       next();
+   };
+  };
+
+
+Audit Middleware
+
+Location: src/middlewares/audit.middleware.js
+
+  javascript
+const AuditLog = require('../models/universal/auditLog.model');
+const logger = require('../utils/logger');
+
+
+/**
+* Log all operations to audit trail
+* Apply to routes that modify data
+*/
+exports.auditLog = (module, action) => {
+ return async (req, res, next) => {
+     // Store original json method
+     const originalJson = res.json;
+
+
+     // Override json method to capture response
+     res.json = function(data) {
+      // Log to audit trail
+      const auditData = {
+          userId: req.user.userId,
+          tenantId: req.user.tenantId,
+          module,
+          action,
+          entity: req.baseUrl.split('/').pop(),
+          entityId: req.params.id || data?.data?.id,
+          changes: {
+           before: req.auditBefore || null,
+           after: data?.data || null
+          },
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          status: 'Success'
+      };
+
+
+      AuditLog.create(auditData).catch(err => {
+          logger.error('Audit log failed:', err);
+      });
+
+
+      // Call original json method
+      return originalJson.call(this, data);
+     };
+
+
+     next();
+ };
+};
+6.6 Validator Structure
+Location: src/validators/modules/academic/student.validator.js
+
+  javascript
+const Joi = require('joi');
+
+
+/**
+* Validation schemas for student operations
+*/
+
+
+exports.createStudentValidator = Joi.object({
+ userId: Joi.string().uuid().required(),
+ programId: Joi.string().uuid().required(),
+ rollNumber: Joi.string().required().max(20),
+ enrollmentNumber: Joi.string().required().max(30),
+ currentSemester: Joi.number().integer().min(1).max(10).required(),
+ currentYear: Joi.number().integer().min(1).max(5).required(),
+ batch: Joi.string().pattern(/^\d{4}$/).required(),
+ admissionDate: Joi.date().required(),
+ admissionType: Joi.string()
+  .valid('Regular', 'Lateral', 'Management')
+  .required(),
+ category: Joi.string()
+  .valid('General', 'SC', 'ST', 'OBC')
+  .required(),
+ personalInfo: Joi.object({
+  dateOfBirth: Joi.date().required(),
+  gender: Joi.string().valid('Male', 'Female', 'Other').required(),
+  bloodGroup: Joi.string().valid('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'),
+  motherTongue: Joi.string(),
+  religion: Joi.string(),
+  nationality: Joi.string().default('Indian'),
+  aadharNumber: Joi.string().pattern(/^\d{12}$/)
+ }).required(),
+ parentInfo: Joi.object({
+  fatherName: Joi.string().required(),
+  fatherOccupation: Joi.string(),
+  fatherPhone: Joi.string().pattern(/^\d{10}$/),
+  motherName: Joi.string().required(),
+  motherOccupation: Joi.string(),
+  guardianName: Joi.string(),
+  guardianPhone: Joi.string().pattern(/^\d{10}$/).required(),
+  annualIncome: Joi.number().min(0)
+ }).required(),
+ addressInfo: Joi.object({
+  permanentAddress: Joi.object({
+      line1: Joi.string().required(),
+      line2: Joi.string(),
+      city: Joi.string().required(),
+      state: Joi.string().required(),
+      pincode: Joi.string().pattern(/^\d{6}$/).required()
+  }).required(),
+  currentAddress: Joi.object({
+      line1: Joi.string().required(),
+      line2: Joi.string(),
+      city: Joi.string().required(),
+      state: Joi.string().required(),
+      pincode: Joi.string().pattern(/^\d{6}$/).required()
+  }).required()
+ }).required()
+});
+
+
+exports.updateStudentValidator = Joi.object({
+ currentSemester: Joi.number().integer().min(1).max(10),
+ currentYear: Joi.number().integer().min(1).max(5),
+ status: Joi.string().valid('Active', 'Inactive', 'Graduated', 'Discontinued'),
+ personalInfo: Joi.object({
+  bloodGroup: Joi.string().valid('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'),
+  motherTongue: Joi.string(),
+  religion: Joi.string()
+ }),
+ parentInfo: Joi.object({
+  fatherOccupation: Joi.string(),
+  fatherPhone: Joi.string().pattern(/^\d{10}$/),
+  motherOccupation: Joi.string(),
+  guardianPhone: Joi.string().pattern(/^\d{10}$/),
+  annualIncome: Joi.number().min(0)
+ }),
+ addressInfo: Joi.object({
+  currentAddress: Joi.object({
+      line1: Joi.string(),
+      line2: Joi.string(),
+      city: Joi.string(),
+      state: Joi.string(),
+      pincode: Joi.string().pattern(/^\d{6}$/)
+  })
+ })
+}).min(1); // At least one field must be present
+
+
+exports.getStudentValidator = Joi.object({
+ studentId: Joi.string().uuid().required()
+}).unknown(true); // Allow other params
+7. Database Schema Guidelines
+7.1 Required Fields in Every Collection
+
+ javascript
+
+ {
+     // Primary Key - ALWAYS custom string ID
+     [entity]Id: {
+      type: String,
+      default: () => uuidv4(),
+      unique: true,
+      required: true,
+      index: true
+     },
+
+
+     // Tenant isolation - ALWAYS required
+     tenantId: {
+      type: String,
+      required: true,
+      index: true,
+      ref: 'Tenant'
+     },
+
+
+     // Soft delete - ALWAYS include
+     isActive: {
+      type: Boolean,
+      default: true,
+      index: true
+     },
+
+
+     // Timestamps - ALWAYS enable in schema options
+     createdAt: Date,
+     updatedAt: Date
+ }
+
+
+
+7.2 Foreign Key Guidelines
+
+ javascript
+ // ALWAYS index foreign keys
+ // ALWAYS include ref for population
+ departmentId: {
+     type: String,
+     required: true,
+     index: true,
+     ref: 'Department'
+ }
+
+
+ // For optional foreign keys
+ supervisorId: {
+     type: String,
+     index: true,
+     ref: 'Faculty'
+ }
+
+
+
+7.3 Compound Index Guidelines
+
+ javascript
+
+ // Create compound indexes for frequent query patterns
+ schema.index({ tenantId: 1, programId: 1 });
+ schema.index({ tenantId: 1, academicYear: 1, semester: 1 });
+ schema.index({ tenantId: 1, status: 1, createdAt: -1 });
+
+
+
+7.4 Enum Guidelines
+
+ javascript
+
+ // Use enums for fields with fixed values
+ status: {
+     type: String,
+     enum: ['Active', 'Inactive', 'Completed'],
+     default: 'Active'
+ }
+
+
+
+7.5 Embedded Documents
+
+ javascript
+  // Use for tightly coupled data that won't be queried separately
+  address: {
+      line1: String,
+      line2: String,
+      city: String,
+      state: String,
+      pincode: String
+  }
+
+
+  // Don't over-nest (max 2 levels)
+
+
+
+
+8. API Development Guidelines
+8.1 Response Format
+Success Response:
+
+  javascript
+
+  {
+      "success": true,
+      "data": {
+          // Response data
+      },
+      "message": "Operation successful"
+  }
+
+
+Error Response:
+
+  javascript
+
+  {
+      "success": false,
+      "error": {
+          "code": "ERROR_CODE",
+          "message": "Human readable message",
+          "details": [], // Optional
+          "timestamp": "2024-10-29T10:30:00Z"
+      }
+  }
+
+
+Paginated Response:
+
+  javascript
+  {
+      "success": true,
+      "data": {
+          "items": [],
+          "pagination": {
+              "currentPage": 1,
+              "totalPages": 10,
+              "totalItems": 195,
+              "hasNext": true,
+              "hasPrev": false
+          }
+      }
+  }
+
+
+
+8.2 HTTP Status Codes
+ Status                                        Usage
+
+ 200 OK                                        Successful GET, PUT, DELETE
+
+ 201 Created                                   Successful POST
+
+ 202 Accepted                                  Async operation started
+
+ 400 Bad Request                               Invalid request data
+
+ 401 Unauthorized                              Authentication required
+
+ 403 Forbidden                                 Insufficient permissions
+
+ 404 Not Found                                 Resource not found
+
+ 409 Conflict                                  Duplicate entry
+
+ 422 Unprocessable Entity                      Business logic error
+
+ 429 Too Many Requests                         Rate limit exceeded
+
+ 500 Internal Server Error                     Server error
+
+
+8.3 Query Parameters
+Pagination:
+
+
+  ?page=1&limit=20
+
+
+Filtering:
+
+
+  ?status=Active&semester=5&programId=abc123
+
+
+Sorting:
+
+
+  ?sortBy=createdAt&sortOrder=desc
+Search:
+
+
+  ?search=john&searchFields=name,email
+
+
+Date Range:
+
+
+  ?startDate=2024-01-01&endDate=2024-12-31
+
+
+
+8.4 Request Validation
+
+  javascript
+
+  // Always validate:
+  1. Required fields present
+  2. Data types correct
+  3. Enums match allowed values
+  4. Foreign keys exist
+  5. Business rules satisfied
+  6. User has permissions
+
+
+
+
+9. Testing Requirements
+9.1 Unit Tests
+Required Coverage: 80%+
+
+Location: tests/unit/[module]/[entity].test.js
+
+  javascript
+  const { StudentService } = require('../../../src/services/modules/academic');
+  const Student = require('../../../src/models/modules/academic/student.model');
+
+
+  describe('StudentService', () => {
+
+
+   describe('getStudentById', () => {
+     it('should return student when found', async () => {
+        const mockStudent = {
+         studentId: 'test-123',
+         name: 'John Doe'
+        };
+
+
+        jest.spyOn(Student, 'findOne').mockResolvedValue(mockStudent);
+
+
+        const result = await StudentService.getStudentById('test-123', 'tenant-1');
+
+
+        expect(result).toEqual(mockStudent);
+        expect(Student.findOne).toHaveBeenCalledWith({
+         studentId: 'test-123',
+         tenantId: 'tenant-1',
+         isActive: true
+        });
+     });
+
+
+     it('should return null when student not found', async () => {
+        jest.spyOn(Student, 'findOne').mockResolvedValue(null);
+
+
+        const result = await StudentService.getStudentById('invalid', 'tenant-1');
+
+
+        expect(result).toBeNull();
+     });
+   });
+
+
+   // More tests...
+  });
+
+
+
+9.2 Integration Tests
+Location: tests/integration/[module]/[entity].test.js
+
+  javascript
+  const request = require('supertest');
+  const app = require('../../../src/app');
+  const { setupTestDB, clearTestDB } = require('../../helpers/db');
+
+
+  describe('Student API', () => {
+
+
+   beforeAll(async () => {
+    await setupTestDB();
+   });
+
+
+   afterAll(async () => {
+    await clearTestDB();
+   });
+
+
+   describe('GET /api/v1/academic/students', () => {
+    it('should require authentication', async () => {
+        const res = await request(app)
+         .get('/api/v1/academic/students');
+
+
+        expect(res.status).toBe(401);
+    });
+
+
+    it('should return students for authenticated user', async () => {
+        const token = await getAuthToken(); // Helper function
+
+
+        const res = await request(app)
+         .get('/api/v1/academic/students')
+         .set('Authorization', `Bearer ${token}`);
+
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toHaveProperty('items');
+    });
+   });
+  });
+
+
+
+9.3 Test Requirements by Module
+Each developer must write:
+
+    Unit tests for all service methods
+
+    Integration tests for all API endpoints
+
+    Edge case tests (null values, invalid data)
+
+    Permission tests (unauthorized access)
+   Tenant isolation tests
+
+
+
+10. Git Workflow
+10.1 Branch Naming
+
+ feature/[module]-[entity]-[description]
+ bugfix/[module]-[issue-description]
+ hotfix/[critical-issue]
+ refactor/[module]-[description]
+
+
+ Examples:
+ feature/academic-student-enrollment
+ bugfix/finance-payment-calculation
+ hotfix/auth-session-expiry
+ refactor/llm-query-optimization
+
+
+
+10.2 Commit Message Format
+
+ [MODULE] Type: Brief description
+
+
+ Detailed description if needed
+
+
+ Related: #issue-number
+
+
+Examples:
+  [ACADEMIC] feat: Add student enrollment API
+
+
+  Implemented POST /api/v1/academic/enrollments endpoint
+  with validation and duplicate check
+
+
+  Related: #123
+
+
+  [FINANCE] fix: Correct GST calculation in invoices
+
+
+  Fixed bug where CGST/SGST was calculated incorrectly
+  for inter-state transactions
+
+
+  Related: #456
+
+
+  [INFRA] refactor: Optimize asset search query
+
+
+  Improved performance by adding compound index on
+  tenantId + assetType + location
+
+
+  [QUALITY] docs: Update AQAR API documentation
+
+
+
+10.3 Pull Request Process
+ 1. Create feature branch from develop
+
+ 2. Implement feature with tests
+
+ 3. Run linter: npm run lint
+
+ 4. Run tests: npm test
+
+ 5. Commit with proper message format
+
+ 6. Push to remote
+
+ 7. Create PR to develop branch
+
+ 8. Fill PR template
+
+ 9. Request review from:
+         Module lead
+
+         At least one peer developer
+
+10. Address review comments
+
+11. Squash and merge after approval
+
+10.4 Code Review Checklist
+Reviewer must verify:
+  Code follows SOP guidelines
+  Tests are present and passing
+  No hardcoded values or secrets
+  Proper error handling
+  Tenant isolation maintained
+  Audit logging implemented
+  Documentation updated
+  No security vulnerabilities
+  Performance optimized
+  Dependencies properly managed
+
+
+
+11. Code Review Checklist
+11.1 General Checks
+  Code follows naming conventions
+  No console.log statements in production code
+  No commented-out code
+  No TODO comments without tracking
+  Proper indentation and formatting
+  JSDoc comments present
+  No duplicate code
+  Functions are small and focused
+
+11.2 Security Checks
+  tenantId always included in queries
+  User authentication verified
+  Permissions checked
+  No SQL injection vulnerabilities
+  No XSS vulnerabilities
+  Passwords are hashed
+  Sensitive data is encrypted
+  Rate limiting applied
+  Input validation present
+
+11.3 Database Checks
+  Indexes created for frequent queries
+  Compound indexes used appropriately
+  Foreign keys validated
+  Soft deletes implemented
+  Timestamps enabled
+  isActive flag used
+  No N+1 query problems
+  Transactions used for multi-operations
+
+11.4 API Checks
+  Proper HTTP methods used
+  Status codes correct
+  Response format standardized
+  Error messages helpful
+  Pagination implemented
+  Filtering works correctly
+  Sorting works correctly
+  Search functionality tested
+
+11.5 Testing Checks
+  Unit tests present
+  Integration tests present
+  Edge cases covered
+  Mock data realistic
+  Test coverage ≥ 80%
+  All tests passing
+  No flaky tests
+
+
+
+12. Environment Configuration
+12.1 Required Environment Variables
+
+ env
+# Application
+NODE_ENV=development|staging|production
+PORT=3000
+API_VERSION=v1
+
+
+# Database
+MONGODB_URI=mongodb://localhost:27017/naac_system
+MONGODB_TEST_URI=mongodb://localhost:27017/naac_system_test
+
+
+# JWT
+JWT_SECRET=your-super-secret-key
+JWT_EXPIRY=24h
+JWT_REFRESH_EXPIRY=7d
+
+
+# Multi-tenancy
+TENANT_MODE=subdomain|path|header
+
+
+# Rate Limiting
+RATE_LIMIT_WINDOW=15m
+RATE_LIMIT_MAX_REQUESTS=100
+
+
+# Logging
+LOG_LEVEL=debug|info|warn|error
+LOG_FILE_PATH=./logs
+
+
+# Email
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-password
+EMAIL_FROM=noreply@naac-system.com
+
+
+# SMS
+SMS_PROVIDER=twilio|msg91
+SMS_API_KEY=your-api-key
+SMS_SENDER_ID=NAACSYS
+
+
+# Cloud Storage
+CLOUD_PROVIDER=aws|azure|gcp
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_REGION=ap-south-1
+AWS_S3_BUCKET=naac-system-files
+
+
+# Redis (for caching)
+REDIS_HOST=localhost
+ REDIS_PORT=6379
+ REDIS_PASSWORD=
+
+
+ # LLM Integration
+ OPENAI_API_KEY=your-openai-key
+ LLM_MODEL=gpt-4
+ LLM_MAX_TOKENS=4096
+
+
+
+
+13. Common Pitfalls to Avoid
+13.1   ❌ DON'T
+ javascript
+
+ // 1. Don't query without tenantId
+ const students = await Student.find({ programId });
+
+
+ // 2. Don't hardcode values
+ const maxAttempts = 5;
+ const apiUrl = 'https://api.example.com';
+
+
+ // 3. Don't use callbacks
+ db.find({}, (err, docs) => {
+  // handle
+ });
+
+
+ // 4. Don't expose sensitive data
+ const user = await User.findOne({ email });
+ res.json(user); // Contains password hash!
+
+
+ // 5. Don't skip validation
+ const student = new Student(req.body);
+ await student.save();
+
+
+ // 6. Don't use var
+ var studentCount = 0;
+
+
+ // 7. Don't forget error handling
+ const result = await someOperation();
+ return res.json(result);
+
+
+ // 8. Don't hard delete
+ await Student.deleteOne({ studentId });
+13.2   ✅ DO
+ javascript
+
+ // 1. Always include tenantId
+ const students = await Student.find({
+     tenantId: req.user.tenantId,
+     programId
+ });
+
+
+ // 2. Use constants
+ const { MAX_LOGIN_ATTEMPTS, API_BASE_URL } = require('../utils/constants');
+
+
+ // 3. Use async/await
+ const docs = await db.find({});
+
+
+ // 4. Select only needed fields
+ const user = await User.findOne({ email }).select('-password -mfaSecret');
+ res.json(user);
+
+
+ // 5. Validate before saving
+ const { error } = validateStudent(req.body);
+ if (error) throw new AppError('Validation failed', 400);
+ const student = new Student(req.body);
+ await student.save();
+
+
+ // 6. Use const/let
+ const studentCount = await Student.countDocuments();
+
+
+ // 7. Always wrap in try-catch
+ try {
+     const result = await someOperation();
+     return res.json(result);
+ } catch (error) {
+     next(error);
+ }
+
+
+ // 8. Soft delete
+ await Student.findOneAndUpdate(
+     { studentId },
+     { isActive: false }
+ );
+
+
+
+
+14. Module Development Order
+14.1 Recommended Development Sequence
+  Phase 1: Foundation (Week 1-2)
+  ├── Module 1: Authentication & User Management (Developer 1)
+  │ └── Dependencies: None
+  └── Setup: Database, environment, CI/CD
+
+
+  Phase 2: Core Modules (Week 3-5)
+  ├── Module 3: Academic Program Management (Developer 3)
+  │ └── Creates: departments, programs, courses, students
+  ├── Module 5: Infrastructure & Resources (Developer 5)
+  │ └── Creates: buildings, rooms
+  └── Module 2: Foundation Documents (Developer 2)
+     └── Dependencies: Module 1
+
+
+  Phase 3: Dependent Modules (Week 6-8)
+  ├── Module 4: Faculty Management (Developer 4)
+  │ └── Dependencies: Module 1, 3
+  ├── Module 6: Finance (Developer 6)
+  │ └── Dependencies: Module 1, 3, 4, 5
+  └── Module 7: Quality Assurance (Developer 7)
+     └── Dependencies: Module 1, 3
+
+
+  Phase 4: Advanced Modules (Week 9-10)
+  ├── Module 8: Research & External Relations (Developer 8)
+  │ └── Dependencies: Module 1, 3, 4
+  └── Module 9: LLM Integration (Developer 9)
+     └── Dependencies: All previous modules
+
+
+  Phase 5: Integration (Week 11-12)
+  └── Module 10: System Integration & Analytics (Developer 10)
+     └── Dependencies: All modules
+
+
+
+14.2 Inter-Module Communication
+Option 1: Direct Database Access (Recommended for reads)
+
+  javascript
+
+  // Module 6 (Finance) reading from Module 3 (Academic)
+  const Student = require('../../models/modules/academic/student.model');
+  const student = await Student.findOne({ studentId, tenantId });
+
+
+Option 2: Service Layer (Recommended for complex operations)
+
+  javascript
+  // Module 6 calling Module 3 service
+  const { StudentService } = require('../../services/modules/academic');
+  const student = await StudentService.getStudentById(studentId, tenantId);
+
+
+Option 3: Internal APIs (For future microservices)
+
+  javascript
+
+  // Module 6 calling Module 3 API
+  const response = await axios.get(
+   `${INTERNAL_API_URL}/academic/students/${studentId}`,
+   { headers: { 'X-Internal-API-Key': INTERNAL_API_KEY } }
+  );
+
+
+
+
+15. Documentation Requirements
+15.1 Code Documentation
+Every file must have:
+
+  javascript
+
+  /**
+  * Student Model
+  *
+  * Module: Academic (Module 3)
+  * Purpose: Student information and enrollment management
+  * Dependencies: users, tenants, programs
+  *
+  * @module models/academic/student
+  * @requires mongoose
+  * @requires uuid
+  */
+
+
+Every function must have:
+
+  javascript
+  /**
+  * Get student by ID
+  *
+  * @param {string} studentId - Student unique identifier
+  * @param {string} tenantId - Tenant unique identifier
+  * @returns {Promise<Object|null>} Student object or null
+  * @throws {AppError} If database error occurs
+  */
+  async getStudentById(studentId, tenantId) {
+      // Implementation
+  }
+
+
+
+15.2 API Documentation
+Use Swagger/OpenAPI for all endpoints:
+
+  javascript
+
+  /**
+  * @swagger
+  * /api/v1/academic/students:
+  * get:
+  *      summary: Get all students
+  *      tags: [Students]
+  *      security:
+  *       - bearerAuth: []
+  *      parameters:
+  *       - in: query
+  *         name: page
+  *         schema:
+  *            type: integer
+  *         description: Page number
+  *       - in: query
+  *         name: limit
+  *         schema:
+  *            type: integer
+  *         description: Items per page
+  *      responses:
+  *       200:
+  *         description: Success
+  *       401:
+  *         description: Unauthorized
+  */
+
+
+
+15.3 README Requirements
+Each module must have:
+ markdown
+
+ # Module 3: Academic Program Management
+
+
+ ## Overview
+ Brief description of module purpose
+
+
+ ## Collections
+ - students
+ - programs
+ - courses
+ - enrollments
+ - grades
+
+
+ ## Dependencies
+ - Module 1: Authentication
+ - Module 5: Infrastructure (rooms, buildings)
+
+
+ ## API Endpoints
+ List of all endpoints with brief description
+
+
+ ## Installation
+ Setup instructions
+
+
+ ## Environment Variables
+ Required env vars
+
+
+ ## Testing
+ How to run tests
+
+
+ ## Common Issues
+ Known issues and solutions
+
+
+
+
+16. Performance Optimization Guidelines
+16.1 Database Optimization
+
+ javascript
+ // 1. Use lean() for read-only operations
+ const students = await Student.find({ tenantId }).lean();
+
+
+ // 2. Select only needed fields
+ const students = await Student.find({ tenantId })
+  .select('name email programId')
+  .lean();
+
+
+ // 3. Use pagination
+ const students = await Student.find({ tenantId })
+  .limit(20)
+  .skip((page - 1) * 20)
+  .lean();
+
+
+ // 4. Use indexes
+ schema.index({ tenantId: 1, programId: 1, semester: 1 });
+
+
+ // 5. Use aggregation for complex queries
+ const result = await Student.aggregate([
+  { $match: { tenantId } },
+  { $group: { _id: '$programId', count: { $sum: 1 } } }
+ ]);
+
+
+ // 6. Use Promise.all for parallel operations
+ const [students, programs, faculty] = await Promise.all([
+  Student.find({ tenantId }),
+  Program.find({ tenantId }),
+  Faculty.find({ tenantId })
+ ]);
+
+
+
+16.2 Caching Strategy
+
+ javascript
+ const redis = require('redis');
+ const client = redis.createClient();
+
+
+ /**
+  * Get data with caching
+  */
+ async function getStudentWithCache(studentId, tenantId) {
+     const cacheKey = `student:${tenantId}:${studentId}`;
+
+
+     // Check cache
+     const cached = await client.get(cacheKey);
+     if (cached) {
+         return JSON.parse(cached);
+     }
+
+
+     // Get from DB
+     const student = await Student.findOne({ studentId, tenantId }).lean();
+
+
+     // Store in cache (5 minutes)
+     await client.setex(cacheKey, 300, JSON.stringify(student));
+
+
+     return student;
+ }
+
+
+
+
+17. Security Checklist
+17.1 Authentication & Authorization
+  JWT tokens properly signed and verified
+  Token expiry implemented
+  Refresh token rotation
+  MFA supported
+  Session management
+  Password hashing (bcrypt)
+  Password policy enforced
+  Account lockout after failed attempts
+  Role-based access control
+  Permission checks before operations
+
+17.2 Data Security
+  Tenant isolation enforced
+  Sensitive data encrypted at rest
+  HTTPS enforced in production
+  SQL injection prevented
+  XSS attacks prevented
+  CSRF tokens used
+  Rate limiting implemented
+  Input validation on all endpoints
+  Output encoding
+  File upload validation
+
+17.3 Audit & Compliance
+ All operations logged
+ Audit trail immutable
+  PII data identified and protected
+  Data retention policy
+  GDPR compliance
+  Data export functionality
+  Data deletion on request
+
+
+
+18. Deployment Checklist
+18.1 Pre-Deployment
+ All tests passing
+  Code reviewed and approved
+  Environment variables configured
+  Database migrations run
+  Seeds/fixtures loaded (if needed)
+  SSL certificates configured
+  Domain names configured
+  Email/SMS services configured
+  Cloud storage configured
+  Monitoring tools configured
+  Backup strategy in place
+
+18.2 Post-Deployment
+  Health check endpoint responding
+  Database connectivity verified
+  External integrations working
+  Email delivery tested
+  SMS delivery tested
+  File upload/download tested
+ Authentication working
+ Permissions working
+ Monitoring alerts configured
+ Logs accessible
+
+
+
+Appendix A: Quick Reference
+Command Shortcuts
+
+ bash
+
+ # Development
+ npm run dev           # Start development server
+ npm run lint         # Run ESLint
+ npm run format         # Format code with Prettier
+ npm test            # Run all tests
+ npm run test:unit      # Run unit tests only
+ npm run test:integration # Run integration tests
+ npm run coverage        # Generate coverage report
+
+
+ # Database
+ npm run db:seed        # Seed database
+ npm run db:migrate       # Run migrations
+ npm run db:reset       # Reset database
+
+
+ # Production
+ npm start           # Start production server
+ npm run build         # Build for production
+
+
+
+Environment Setup
+
+ bash
+ # 1. Clone repository
+ git clone <repository-url>
+ cd naac-system
+
+
+ # 2. Install dependencies
+ npm install
+
+
+ # 3. Copy environment file
+ cp .env.example .env
+
+
+ # 4. Update .env with your values
+
+
+ # 5. Start MongoDB
+ mongod --dbpath=/data/db
+
+
+ # 6. Start Redis (if using caching)
+ redis-server
+
+
+ # 7. Run migrations
+ npm run db:migrate
+
+
+ # 8. Seed database (optional)
+ npm run db:seed
+
+
+ # 9. Start development server
+ npm run dev
+
+
+
+
+Appendix B: Contact & Support
+Module                           Developer      Slack Channel
+
+Module 1                         Developer 1    #module-auth
+
+Module 2                         Developer 2    #module-documents
+
+Module 3                         Developer 3    #module-academic
+
+Module 4                         Developer 4    #module-faculty
+
+Module 5                         Developer 5    #module-infrastructure
+
+Module 6                         Developer 6    #module-finance
+
+Module 7                         Developer 7    #module-quality
+
+Module 8                         Developer 8    #module-research
+
+Module 9                         Developer 9    #module-llm
+
+Module 10                        Developer 10   #module-system
+General Support: #naac-dev-support
+Code Review: #code-review
+DevOps: #devops
+
+
+
+Document History
+ Version           Date                Author      Changes
+
+ 1.0               Oct 2025            Tech Lead   Initial SOP creation
+
+
+
+
+END OF SOP
+
+Mandatory Reading for ALL Developers
+Review Before Starting Development
+Refer During Code Reviews
+

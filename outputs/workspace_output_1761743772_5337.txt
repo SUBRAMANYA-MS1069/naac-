@@ -1,0 +1,43 @@
+ 6. Coding Standards
+
+ 7. Database Schema Guidelines
+
+ 8. API Development Guidelines
+
+ 9. Testing Requirements
+
+10. Git Workflow
+
+11. Code Review Checklist
+
+
+
+1. Project Structure
+1.1 Root Directory Structure
+
+  naac-system/
+  ├── src/
+  │ ├── config/             # Configuration files
+  │ ├── models/              # Database models (Universal + Module-specific)
+--
+6. Coding Standards
+6.1 Model Structure
+Location: src/models/[universal|modules]/[module]/[entity].model.js
+
+  javascript
+const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
+
+
+/**
+* Student Schema
+* Module: Academic (Module 3)
+* Dependencies: users, tenants, programs
+*/
+const studentSchema = new mongoose.Schema(
+ {
+     // Primary Key - Always use custom string ID
+     studentId: {
+      type: String,
+      default: () => uuidv4(),
+      unique: true,

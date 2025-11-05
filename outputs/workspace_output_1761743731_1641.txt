@@ -1,0 +1,30 @@
+NAAC Compliance Management System
+Development Team Task Assignment Document
+
+
+Project Overview
+System Name: NAAC Compliance Management System
+Technology Stack: MERN (MongoDB, Express.js, React.js, Node.js)
+Integration: Open-WebUI with LLM Assistant
+Team Size: 10 Full-Stack Developers
+Objective: Dynamic document creation through conversational AI for NAAC compliance
+
+
+
+Team Structure & Task Distribution
+
+Developer 1: Authentication & User Management Specialist
+Primary Responsibilities:
+
+   Complete authentication system with JWT implementation
+
+   Multi-tenant user management architecture
+   Role-based access control (RBAC) system
+
+Detailed Tasks:
+
+1. User Authentication System
+
+   JWT token generation and validation middleware
+   Secure password encryption using bcrypt
+
